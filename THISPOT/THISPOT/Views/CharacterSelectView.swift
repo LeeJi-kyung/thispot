@@ -8,10 +8,13 @@
 import SwiftUI
 
 struct CharacterSelectView: View {
+    let nickname: String
+
     @Environment(\.dismiss) private var dismiss
 
     private let characters = ["charactor1", "charactor2", "charactor3", "charactor4"]
     @State private var selectedIndex: Int? = nil
+    @State private var goToMain: Bool = false
 
     private let backgroundCream = Color(red: 0.973, green: 0.965, blue: 0.953)
     private let brandGreen      = Color(red: 0.502, green: 0.651, blue: 0.388)
@@ -128,7 +131,10 @@ struct CharacterSelectView: View {
                 HStack {
                     Spacer()
                     Button(action: {
-                        // TODO: navigate to next screen
+                        if let idx = selectedIndex {
+                            UserDefaults.standard.set(characters[idx], forKey: "selectedCharacter")
+                            goToMain = true
+                        }
                     }) {
                         Text("Done")
                             .font(.system(size: 16, weight: .semibold))
@@ -148,9 +154,14 @@ struct CharacterSelectView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .navigationDestination(isPresented: $goToMain) {
+            if let idx = selectedIndex {
+                MainView(nickname: nickname, characterAsset: characters[idx])
+            }
+        }
     }
 }
 
 #Preview {
-    CharacterSelectView()
+    CharacterSelectView(nickname: "Yeokyung")
 }

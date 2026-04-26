@@ -65,7 +65,11 @@ struct SignUpView: View {
                 HStack {
                     Spacer()
                     Button(action: {
-                        if isNextEnabled { goToCharacter = true }
+                        let trimmed = nickname.trimmingCharacters(in: .whitespaces)
+                        if !trimmed.isEmpty {
+                            UserDefaults.standard.set(trimmed, forKey: "nickname")
+                            goToCharacter = true
+                        }
                     }) {
                         Text("Next")
                             .font(.system(size: 16, weight: .semibold))
@@ -86,7 +90,7 @@ struct SignUpView: View {
         }
         .onTapGesture { isNicknameFocused = false }
         .navigationDestination(isPresented: $goToCharacter) {
-            CharacterSelectView()
+            CharacterSelectView(nickname: nickname.trimmingCharacters(in: .whitespaces))
         }
     }
 }
