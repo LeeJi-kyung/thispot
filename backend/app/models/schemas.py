@@ -112,6 +112,7 @@ class Summary(BaseModel):
 
 class FinishWalkResponse(BaseModel):
     badge: Badge
+    final_result_url: str | None = None
     report: Report
     summary: Summary
     agent_trace: list[AgentTrace]
@@ -145,6 +146,8 @@ class WalkArchiveItem(BaseModel):
     duration_sec: int
     best_match_score: float
     is_new_spot: bool
+    badge_image_url: str | None = None
+    photo_urls: list[str] = Field(default_factory=list)
     photos: list[ArchivedPhoto]
     badge: Badge
     summary: Summary

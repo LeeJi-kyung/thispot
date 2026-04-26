@@ -26,6 +26,10 @@ def archive_completed_walk(
     clean_user = safe_id(request.user_id, "user")
     clean_session = safe_id(request.session_id)
     archive_id = f"walk_{clean_session}"
+    archived_photos = [
+        _archived_photo(record=record, base_url=base_url)
+        for record in accepted_photo_records(clean_session, limit=3)
+    ]
     item = WalkArchiveItem(
         archive_id=archive_id,
         user_id=clean_user,
@@ -38,10 +42,9 @@ def archive_completed_walk(
         duration_sec=request.duration_sec,
         best_match_score=request.best_match_score,
         is_new_spot=request.is_new_spot,
-        photos=[
-            _archived_photo(record=record, base_url=base_url)
-            for record in accepted_photo_records(clean_session, limit=3)
-        ],
+        badge_image_url=response.badge.image_url,
+        photo_urls=[photo.image_url for photo in archived_photos if photo.image_url],
+        photos=archived_photos,
         badge=response.badge,
         summary=response.summary,
         report=response.report,

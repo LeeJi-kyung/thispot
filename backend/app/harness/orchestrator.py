@@ -190,6 +190,7 @@ class WalkHarnessOrchestrator:
 
         response = FinishWalkResponse(
             badge=badge,
+            final_result_url=badge.image_url,
             report=report,
             summary=self._summary(request),
             agent_trace=trace,
@@ -209,6 +210,7 @@ class WalkHarnessOrchestrator:
         report, content_trace = self.content_agent.fallback(request.session_id)
         return FinishWalkResponse(
             badge=badge,
+            final_result_url=badge.image_url,
             report=report,
             summary=self._summary(request),
             agent_trace=[reward_trace, content_trace],

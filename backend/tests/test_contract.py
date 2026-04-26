@@ -228,6 +228,8 @@ def test_finish_walk_contract_and_static_outputs(monkeypatch) -> None:
     assert body["badge"]["rarity"] == "rare"
     assert "image_url" in body["badge"]
     assert body["badge"]["image_url"] is None
+    assert "final_result_url" in body
+    assert body["final_result_url"] == body["badge"]["image_url"]
     assert body["summary"]["subtitle"] == "1.24km - 1,843 steps - 87% color match"
     assert {
         "status",
@@ -296,10 +298,14 @@ def test_finish_walk_contract_and_static_outputs(monkeypatch) -> None:
     assert archived["badge"]["title"] == body["badge"]["title"]
     assert archived["summary"]["title"] == body["summary"]["title"]
     assert archived["report"]["image_url"] == body["report"]["image_url"]
+    assert archived["badge_image_url"] == body["badge"]["image_url"]
     assert len(archived["photos"]) == 3
+    assert len(archived["photo_urls"]) == 3
     first_photo_path = archived["photos"][0]["image_url"].replace("http://localhost:8000", "")
     assert first_photo_path.startswith("/uploads/")
     assert client.get(first_photo_path).status_code == 200
+    for photo_url in archived["photo_urls"]:
+        assert photo_url.startswith("http://localhost:8000/uploads/")
 
 
 def test_finish_walk_requires_three_accepted_proofs() -> None:

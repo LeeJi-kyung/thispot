@@ -61,8 +61,9 @@ content step as `fallback`.
 When `GEMINI_API_KEY` is configured, `RewardAgent` also attempts to generate a
 final vertical badge image from the 3 accepted proof photos and
 `app/assets/character/main.png`. The generated URL is returned as
-`badge.image_url`. If image generation is unavailable, the badge copy still
-returns and `image_url` is `null`.
+`badge.image_url` and top-level `final_result_url` in `/api/finish-walk`. If
+image generation is unavailable, the badge copy still returns and both image
+URL fields are `null`.
 
 ## Instagram Story Share Contract
 
@@ -133,8 +134,8 @@ Each archive item includes:
 - `created_at` and `date`
 - `target_color`
 - `distance_m`, `steps`, `duration_sec`, `best_match_score`
-- accepted proof photo URLs from `/uploads/{filename}`
-- generated `report`
+- `badge_image_url`, usually `/outputs/reports/{session_id}_badge.png`
+- `photo_urls`, accepted proof photo URLs from `/uploads/{filename}`
 - `badge` and `summary`
 
 Run contract tests inside Docker:
