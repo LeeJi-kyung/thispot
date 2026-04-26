@@ -293,7 +293,15 @@ struct WalkSessionView: View {
                 isNewSpot: isNewSpot
             )
 
-            if let urlStr = resp.report?.image_url, let url = URL(string: urlStr) {
+            // Resolve final report — poll if queued.
+            var finalReport: ThiSpotAPI.FinishWalkResponse.Report? = resp.report
+            if resp.report?.status == "queued",
+               let jobID = resp.report?.generation_job_id {
+                finalReport = await pollGenerationJob(jobID: jobID, maxSeconds: 90)
+                    ?? resp.report
+            }
+
+            if let urlStr = finalReport?.image_url, let url = URL(string: urlStr) {
                 // Download once, save to disk so Records picks it up too.
                 // Detail view then renders the local file (no second fetch).
                 if let localURL = await WalkPhotoStore.saveRemoteReport(
@@ -315,6 +323,36 @@ struct WalkSessionView: View {
         withAnimation(.easeInOut(duration: 0.4)) {
             phase = .result
         }
+    }
+
+    /// Polls /api/generation-jobs/{id} every 2s until status is no longer
+    /// queued/running, or until `maxSeconds` elapses. Returns the final report
+    /// if completed/fallback, nil otherwise.
+    private func pollGenerationJob(
+        jobID: String,
+        maxSeconds: Int
+    ) async -> ThiSpotAPI.FinishWalkResponse.Report? {
+        let attempts = max(1, maxSeconds / 2)
+        for _ in 0..<attempts {
+            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2s
+            do {
+                let job = try await ThiSpotAPI.getGenerationJob(jobID: jobID)
+                switch job.status {
+                case "completed", "fallback":
+                    return job.report
+                case "failed":
+                    return nil
+                default:
+                    continue // queued / running
+                }
+            } catch {
+                #if DEBUG
+                print("[pollGenerationJob] error:", error)
+                #endif
+                continue
+            }
+        }
+        return nil // timed out
     }
 
     private var distanceCard: some View {

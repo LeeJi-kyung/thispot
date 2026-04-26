@@ -103,6 +103,13 @@ enum ThiSpotAPI {
         }
     }
 
+    struct GenerationJobResponse: Decodable {
+        let job_id: String
+        let status: String  // queued | running | completed | fallback | failed
+        let report: FinishWalkResponse.Report?
+        let message: String?
+    }
+
     // MARK: - Errors
 
     enum APIError: LocalizedError {
@@ -176,7 +183,7 @@ enum ThiSpotAPI {
         let url = baseURL.appendingPathComponent("api/finish-walk")
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
-        req.timeoutInterval = 60 // report generation can take a few seconds
+        req.timeoutInterval = 120 // report generation can take a while when synchronous
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning")
 
@@ -212,6 +219,38 @@ enum ThiSpotAPI {
         } catch {
             #if DEBUG
             print("[ThiSpotAPI] finishWalk decode failed:",
+                  String(data: data, encoding: .utf8) ?? "<binary>")
+            #endif
+            throw APIError.decode(error)
+        }
+    }
+
+    static func getGenerationJob(jobID: String) async throws -> GenerationJobResponse {
+        let url = baseURL.appendingPathComponent("api/generation-jobs/\(jobID)")
+        var req = URLRequest(url: url)
+        req.httpMethod = "GET"
+        req.timeoutInterval = 30
+        req.setValue("true", forHTTPHeaderField: "ngrok-skip-browser-warning")
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: req)
+        } catch {
+            throw APIError.transport(error)
+        }
+
+        if let http = response as? HTTPURLResponse,
+           !(200..<300).contains(http.statusCode) {
+            let bodyStr = String(data: data, encoding: .utf8) ?? ""
+            throw APIError.http(status: http.statusCode, body: bodyStr)
+        }
+
+        do {
+            return try JSONDecoder().decode(GenerationJobResponse.self, from: data)
+        } catch {
+            #if DEBUG
+            print("[ThiSpotAPI] generation-jobs decode failed:",
                   String(data: data, encoding: .utf8) ?? "<binary>")
             #endif
             throw APIError.decode(error)
