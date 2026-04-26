@@ -18,7 +18,7 @@ class ContentGenerationAgent:
         return report, AgentTrace(
             agent="ContentGenerationAgent",
             status="completed",
-            message="Gemini short-form direction generated",
+            message="Short-form report generated",
         )
 
     def fallback(self, session_id: str = "session_123") -> tuple[Report, AgentTrace]:

@@ -81,10 +81,6 @@ class Report(BaseModel):
     video_url: str
     image_url: str
     thumbnail_url: str
-    shortform_prompt: str = ""
-    style: str = ""
-    caption: str = ""
-    storyboard: list[dict[str, str | int]] = Field(default_factory=list)
 
 
 class Summary(BaseModel):

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -12,7 +13,6 @@ APP_DIR = Path(__file__).resolve().parents[1]
 REPORTS_DIR = APP_DIR / "outputs" / "reports"
 VIDEOS_DIR = APP_DIR / "outputs" / "videos"
 CHARACTER_DIR = APP_DIR / "assets" / "character"
-BASE_URL = "http://localhost:8000"
 
 
 COLOR_RGB = {
@@ -21,8 +21,9 @@ COLOR_RGB = {
     "yellow": (234, 179, 8),
     "green": (34, 197, 94),
     "blue": (59, 130, 246),
-    "indigo": (99, 102, 241),
     "violet": (139, 92, 246),
+    "white": (241, 245, 249),
+    "black": (15, 23, 42),
 }
 
 
@@ -46,7 +47,10 @@ class ReportRenderSkill:
                 best_match_score=0.87,
                 badge_title="Blue Finder",
             )
-            self.render_image_report(payload, basename="static_demo_report")
+            try:
+                self.render_image_report(payload, basename="static_demo_report")
+            except Exception:
+                return
 
     def render_image_report(
         self,
@@ -128,35 +132,26 @@ class ReportRenderSkill:
         image.resize((540, 960)).save(thumb_path, quality=88)
 
         video_path = self._render_mp4_from_image(image_path, file_base)
+        base_url = self._base_url()
         return Report(
             type="video" if video_path else "image",
-            video_url=f"{BASE_URL}/outputs/videos/{video_path.name}" if video_path else "",
-            image_url=f"{BASE_URL}/outputs/reports/{image_path.name}",
-            thumbnail_url=f"{BASE_URL}/outputs/reports/{thumb_path.name}",
-            shortform_prompt=shortform_plan.generation_prompt if shortform_plan else "",
-            style=shortform_plan.style if shortform_plan else "",
-            caption=shortform_plan.share_caption if shortform_plan else "",
-            storyboard=[
-                scene.model_dump() for scene in shortform_plan.storyboard
-            ] if shortform_plan else [],
+            video_url=f"{base_url}/outputs/videos/{video_path.name}" if video_path else "",
+            image_url=f"{base_url}/outputs/reports/{image_path.name}",
+            thumbnail_url=f"{base_url}/outputs/reports/{thumb_path.name}",
         )
 
     def static_demo_report(self, session_id: str = "session_123") -> Report:
-        self.ensure_demo_assets()
         image_path = REPORTS_DIR / "static_demo_report.jpg"
         video_path = VIDEOS_DIR / "static_demo_report.mp4"
-        if not video_path.exists():
+        if image_path.exists() and not video_path.exists():
             self._render_mp4_from_image(image_path, "static_demo_report")
         has_video = video_path.exists()
+        base_url = self._base_url()
         return Report(
             type="video" if has_video else "image",
-            video_url=f"{BASE_URL}/outputs/videos/{video_path.name}" if has_video else "",
-            image_url=f"{BASE_URL}/outputs/reports/static_demo_report.jpg",
-            thumbnail_url=f"{BASE_URL}/outputs/reports/static_demo_report_thumb.jpg",
-            shortform_prompt="Vertical 9:16 ThiSpot color mission recap with a cute avatar, mission proof stamp, walk stats, and badge unlock.",
-            style="color-hunt vlog recap",
-            caption="POV: I went outside just to find today's blue.",
-            storyboard=[],
+            video_url=f"{base_url}/outputs/videos/{video_path.name}" if has_video else "",
+            image_url=f"{base_url}/outputs/reports/static_demo_report.jpg",
+            thumbnail_url=f"{base_url}/outputs/reports/static_demo_report_thumb.jpg",
         )
 
     def _ensure_character_asset(self) -> None:
@@ -234,3 +229,7 @@ class ReportRenderSkill:
             return f"{minutes}m {remainder:02d}s"
         hours, minutes = divmod(minutes, 60)
         return f"{hours}h {minutes:02d}m"
+
+    @staticmethod
+    def _base_url() -> str:
+        return os.getenv("THISPOT_BASE_URL", "http://localhost:8000").rstrip("/")

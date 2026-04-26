@@ -68,9 +68,9 @@ def recommend_color(request: RecommendColorRequest) -> RecommendColorResponse:
 
 @app.post("/api/analyze-photo", response_model=AnalyzePhotoResponse)
 async def analyze_photo(
-    user_id: str = Form("demo_user"),
-    session_id: str = Form("session_123"),
-    target_color: str = Form("blue"),
+    user_id: str = Form(...),
+    session_id: str = Form(...),
+    target_color: str = Form(...),
     lat: float | None = Form(None),
     lng: float | None = Form(None),
     photo: UploadFile = File(...),

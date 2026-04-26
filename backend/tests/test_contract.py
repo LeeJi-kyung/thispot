@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.skills.report_render_skill import ReportRenderSkill
 
 
 client = TestClient(app)
@@ -40,6 +41,41 @@ def test_recommend_color_contract() -> None:
     }
 
 
+def test_recommend_color_uses_white_and_black_palette() -> None:
+    response = client.post(
+        "/api/recommend-color",
+        json={"user_id": "demo_user", "previous_colors": ["blue", "yellow", "orange"]},
+    )
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["target_color"] == "violet"
+
+    response = client.post(
+        "/api/recommend-color",
+        json={
+            "user_id": "demo_user",
+            "previous_colors": ["red", "blue", "yellow", "orange"],
+        },
+    )
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["target_color"] == "white"
+
+    response = client.post(
+        "/api/recommend-color",
+        json={
+            "user_id": "demo_user",
+            "previous_colors": ["red", "green", "blue", "yellow", "orange"],
+        },
+    )
+    body = response.json()
+
+    assert response.status_code == 200
+    assert body["target_color"] == "black"
+
+
 def test_analyze_photo_contract() -> None:
     response = client.post(
         "/api/analyze-photo",
@@ -64,6 +100,38 @@ def test_analyze_photo_contract() -> None:
     assert body["agent_trace"][1]["agent"] == "DiscoveryAgent"
 
 
+def test_analyze_photo_supports_white_and_black_stub_colors() -> None:
+    for color, label in [("white", "cloud"), ("black", "shadow")]:
+        response = client.post(
+            "/api/analyze-photo",
+            data={
+                "user_id": "demo_user",
+                "session_id": f"session_{color}",
+                "target_color": color,
+            },
+            files={"photo": ("photo.jpg", b"demo-photo", "image/jpeg")},
+        )
+        body = response.json()
+
+        assert response.status_code == 200
+        assert body["vision_result"]["detected_color"] == color
+        assert body["vision_result"]["object_label"] == label
+
+
+def test_analyze_photo_rejects_wrong_multipart_field_name() -> None:
+    response = client.post(
+        "/api/analyze-photo",
+        data={
+            "user_id": "demo_user",
+            "session_id": "session_123",
+            "target_colour": "blue",
+        },
+        files={"photo": ("photo.jpg", b"demo-photo", "image/jpeg")},
+    )
+
+    assert response.status_code == 422
+
+
 def test_finish_walk_contract_and_static_outputs() -> None:
     response = client.post(
         "/api/finish-walk",
@@ -85,6 +153,7 @@ def test_finish_walk_contract_and_static_outputs() -> None:
     assert body["badge"]["title"] == "Blue First Finder"
     assert body["badge"]["rarity"] == "rare"
     assert body["summary"]["subtitle"] == "1.24km - 1,843 steps - 87% color match"
+    assert set(body["report"]) == {"type", "video_url", "image_url", "thumbnail_url"}
     assert body["report"]["type"] in {"image", "video"}
     assert body["report"]["image_url"].endswith("/outputs/reports/session_123.jpg")
     assert body["report"]["thumbnail_url"].endswith("/outputs/reports/session_123_thumb.jpg")
@@ -94,3 +163,15 @@ def test_finish_walk_contract_and_static_outputs() -> None:
     assert client.get("/assets/character/base.png").status_code == 200
     assert client.get("/outputs/reports/session_123.jpg").status_code == 200
     assert client.get("/outputs/reports/session_123_thumb.jpg").status_code == 200
+
+
+def test_static_demo_report_does_not_render_on_fallback(monkeypatch) -> None:
+    def fail_render(*args, **kwargs):
+        raise AssertionError("static fallback must not call render_image_report")
+
+    monkeypatch.setattr(ReportRenderSkill, "render_image_report", fail_render)
+
+    report = ReportRenderSkill().static_demo_report()
+
+    assert report.image_url.endswith("/outputs/reports/static_demo_report.jpg")
+    assert report.thumbnail_url.endswith("/outputs/reports/static_demo_report_thumb.jpg")

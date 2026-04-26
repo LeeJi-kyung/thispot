@@ -2,6 +2,9 @@
 
 FastAPI harness backend for the ThiSpot MVP.
 
+Mission colors: `red`, `orange`, `yellow`, `green`, `blue`, `violet`,
+`white`, `black`.
+
 ## Setup
 
 Recommended demo path: run the backend in Docker so Python, `ffmpeg`, and
@@ -16,6 +19,9 @@ Then open `http://localhost:8000/health`.
 
 The compose file uses Docker named volumes for uploads and generated reports.
 This avoids macOS bind-mount write errors during Pillow/ffmpeg rendering.
+
+Generated absolute URLs use `THISPOT_BASE_URL`, defaulting to
+`http://localhost:8000`.
 
 Local setup requires Python 3.12 or 3.13. Do not use the system `python3` if it
 resolves to Python 3.7.
@@ -42,6 +48,10 @@ storyboard so the app and demo keep working.
 export GEMINI_API_KEY="your-key"
 export GEMINI_MODEL="gemini-2.5-flash"
 ```
+
+Gemini output is used internally to guide rendering. The public `report`
+response remains the README contract: `type`, `video_url`, `image_url`, and
+`thumbnail_url`.
 
 ## Verify
 

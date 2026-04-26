@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from app.agents.content_generation_agent import ContentGenerationAgent
@@ -24,7 +25,7 @@ from app.storage.sessions import get_photo_paths
 
 class WalkHarnessOrchestrator:
     def __init__(self, base_url: str = "http://localhost:8000") -> None:
-        self.base_url = base_url.rstrip("/")
+        self.base_url = os.getenv("THISPOT_BASE_URL", base_url).rstrip("/")
         self.personal_walk_agent = PersonalWalkAgent()
         self.vision_agent = VisionMissionAgent()
         self.discovery_agent = DiscoveryAgent()

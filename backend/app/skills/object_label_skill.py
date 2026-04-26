@@ -8,7 +8,8 @@ class ObjectLabelSkill:
             "yellow": "light",
             "green": "leaf",
             "blue": "sky",
-            "indigo": "wall",
             "violet": "flower",
+            "white": "cloud",
+            "black": "shadow",
         }
         return labels.get(color, "sky")

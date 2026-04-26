@@ -23,4 +23,20 @@ MOCK_SPOTS = [
         "lng": 126.925,
         "shared_user_percent": 18,
     },
+    {
+        "spot_id": "spot_white_cloud",
+        "color": "white",
+        "object_label": "cloud",
+        "lat": 37.570,
+        "lng": 126.982,
+        "shared_user_percent": 12,
+    },
+    {
+        "spot_id": "spot_black_shadow",
+        "color": "black",
+        "object_label": "shadow",
+        "lat": 37.560,
+        "lng": 126.970,
+        "shared_user_percent": 9,
+    },
 ]
