@@ -40,7 +40,7 @@ def archive_completed_walk(
         is_new_spot=request.is_new_spot,
         photos=[
             _archived_photo(record=record, base_url=base_url)
-            for record in accepted_photo_records(clean_session, limit=5)
+            for record in accepted_photo_records(clean_session, limit=3)
         ],
         badge=response.badge,
         summary=response.summary,

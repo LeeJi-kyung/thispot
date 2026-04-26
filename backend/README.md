@@ -59,7 +59,7 @@ same fields are filled by a deterministic local plan and `agent_trace` marks the
 content step as `fallback`.
 
 When `GEMINI_API_KEY` is configured, `RewardAgent` also attempts to generate a
-final vertical badge image from the 5 accepted proof photos and
+final vertical badge image from the 3 accepted proof photos and
 `app/assets/character/main.png`. The generated URL is returned as
 `badge.image_url`. If image generation is unavailable, the badge copy still
 returns and `image_url` is `null`.
@@ -99,21 +99,21 @@ curl http://localhost:8000/api/walk-archive/demo_user
 curl http://localhost:8000/api/generation-jobs/{generation_job_id}
 ```
 
-Demo `/api/recommend-color` is fixed to green:
+Demo `/api/recommend-color` is fixed to red:
 
 ```json
 {
-  "target_color": "green",
-  "mission_title": "Green Energy Walk",
-  "mission_text": "Find green moments during today's walk.",
-  "character_outfit_color": "green"
+  "target_color": "red",
+  "mission_title": "Red Energy Walk",
+  "mission_text": "Find red moments during today's walk.",
+  "character_outfit_color": "red"
 }
 ```
 
 For real photo testing, upload one or more photos with the same `session_id`,
 then call `/api/finish-walk` with `photo_ids: []`. Only accepted proofs count,
 and `/api/finish-walk` returns `409 MISSION_NOT_COMPLETE` until the session has
-5 accepted proofs. The backend uses those accepted proof photos for the
+3 accepted proofs. The backend uses those accepted proof photos for the
 generated report/MP4.
 
 ## GPS Discovery

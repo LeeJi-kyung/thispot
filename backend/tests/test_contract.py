@@ -44,14 +44,14 @@ def test_recommend_color_contract() -> None:
 
     assert response.status_code == 200
     assert body == {
-        "target_color": "green",
-        "mission_title": "Green Energy Walk",
-        "mission_text": "Find green moments during today's walk.",
-        "character_outfit_color": "green",
+        "target_color": "red",
+        "mission_title": "Red Energy Walk",
+        "mission_text": "Find red moments during today's walk.",
+        "character_outfit_color": "red",
     }
 
 
-def test_recommend_color_is_demo_green_for_any_history() -> None:
+def test_recommend_color_is_demo_red_for_any_history() -> None:
     for previous_colors in [
         ["blue", "yellow", "orange"],
         ["red", "blue", "yellow", "orange"],
@@ -64,7 +64,7 @@ def test_recommend_color_is_demo_green_for_any_history() -> None:
         body = response.json()
 
         assert response.status_code == 200
-        assert body["target_color"] == "green"
+        assert body["target_color"] == "red"
 
 
 def test_analyze_photo_contract() -> None:
@@ -86,8 +86,8 @@ def test_analyze_photo_contract() -> None:
     assert body["photo_id"].startswith("photo_")
     assert body["proof_result"]["accepted"] is True
     assert body["proof_result"]["accepted_count"] >= 1
-    assert body["proof_result"]["required_count"] == 5
-    assert body["proof_result"]["remaining_count"] <= 4
+    assert body["proof_result"]["required_count"] == 3
+    assert body["proof_result"]["remaining_count"] <= 2
     assert body["proof_result"]["completion_unlocked"] in {False, True}
     assert body["vision_result"]["detected_color"] == "blue"
     assert body["vision_result"]["match_score"] >= 0.70
@@ -114,7 +114,7 @@ def test_rejected_photo_does_not_count_as_accepted_proof() -> None:
     assert response.status_code == 200
     assert body["proof_result"]["accepted"] is False
     assert body["proof_result"]["accepted_count"] == 0
-    assert body["proof_result"]["remaining_count"] == 5
+    assert body["proof_result"]["remaining_count"] == 3
     assert body["proof_result"]["completion_unlocked"] is False
 
 
@@ -187,7 +187,7 @@ def test_finish_walk_contract_and_static_outputs(monkeypatch) -> None:
     session_id = f"session_finish_contract_{uuid4().hex}"
     user_id = f"archive_user_{uuid4().hex}"
     photo_ids = []
-    for _ in range(5):
+    for _ in range(3):
         photo_response = client.post(
             "/api/analyze-photo",
             data={
@@ -203,7 +203,7 @@ def test_finish_walk_contract_and_static_outputs(monkeypatch) -> None:
         proof_body = photo_response.json()
         photo_ids.append(proof_body["photo_id"])
 
-    assert proof_body["proof_result"]["accepted_count"] == 5
+    assert proof_body["proof_result"]["accepted_count"] == 3
     assert proof_body["proof_result"]["remaining_count"] == 0
     assert proof_body["proof_result"]["completion_unlocked"] is True
 
@@ -296,15 +296,15 @@ def test_finish_walk_contract_and_static_outputs(monkeypatch) -> None:
     assert archived["badge"]["title"] == body["badge"]["title"]
     assert archived["summary"]["title"] == body["summary"]["title"]
     assert archived["report"]["image_url"] == body["report"]["image_url"]
-    assert len(archived["photos"]) == 5
+    assert len(archived["photos"]) == 3
     first_photo_path = archived["photos"][0]["image_url"].replace("http://localhost:8000", "")
     assert first_photo_path.startswith("/uploads/")
     assert client.get(first_photo_path).status_code == 200
 
 
-def test_finish_walk_requires_five_accepted_proofs() -> None:
+def test_finish_walk_requires_three_accepted_proofs() -> None:
     session_id = f"session_not_complete_{uuid4().hex}"
-    for _ in range(4):
+    for _ in range(2):
         response = client.post(
             "/api/analyze-photo",
             data={

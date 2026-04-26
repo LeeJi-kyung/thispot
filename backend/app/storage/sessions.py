@@ -17,7 +17,7 @@ APP_DIR = Path(__file__).resolve().parents[1]
 UPLOAD_DIR = APP_DIR / "uploads"
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
-REQUIRED_PROOFS = 5
+REQUIRED_PROOFS = 3
 
 SESSION_STORE = JsonStore("sessions.json", {"sessions": {}})
 

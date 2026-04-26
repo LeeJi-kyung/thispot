@@ -55,7 +55,7 @@ class DiscoveryResult(BaseModel):
 class ProofResult(BaseModel):
     accepted: bool
     accepted_count: int
-    required_count: int = 5
+    required_count: int = 3
     remaining_count: int
     completion_unlocked: bool
 

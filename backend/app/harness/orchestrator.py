@@ -132,10 +132,10 @@ class WalkHarnessOrchestrator:
 
     def finish_walk(self, request: FinishWalkRequest) -> FinishWalkResponse:
         trace: list[AgentTrace] = []
-        accepted_paths = accepted_photo_paths(request.session_id, limit=5)
-        if len(accepted_paths) < 5:
+        accepted_paths = accepted_photo_paths(request.session_id, limit=3)
+        if len(accepted_paths) < 3:
             raise ValueError(
-                "MISSION_NOT_COMPLETE: Collect 5 accepted color proofs before finishing this walk."
+                "MISSION_NOT_COMPLETE: Collect 3 accepted color proofs before finishing this walk."
             )
 
         try:
