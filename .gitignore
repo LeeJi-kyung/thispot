@@ -1,3 +1,6 @@
+# Xcode user data
+*.xcuserstate
+xcuserdata/
 ## User settings
 xcuserdata/
 
