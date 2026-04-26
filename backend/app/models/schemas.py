@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -36,6 +36,81 @@ class AnalyzePhotoData(BaseModel):
     discovery_result: DiscoveryResult
     agent_trace: list[AgentTrace]
 
+
+# ── Finish-walk models ────────────────────────────────────────────────────────
+
+class ShortformScene(BaseModel):
+    scene: int
+    caption: str
+    visual: str
+    transition: str
+
+
+class ShortformPlan(BaseModel):
+    style: str
+    caption: str
+    shortform_prompt: str
+    storyboard: list[ShortformScene]
+
+
+class Badge(BaseModel):
+    title: str
+    description: str
+    rarity: Literal["common", "rare", "epic", "legendary"]
+    image_url: str | None = None
+
+
+class Summary(BaseModel):
+    title: str
+    subtitle: str
+    spot_message: str
+    share_caption: str
+
+
+class Report(BaseModel):
+    status: Literal["completed", "fallback", "queued"]
+    type: Literal["video", "image", "job"]
+    video_url: str | None = None
+    image_url: str
+    thumbnail_url: str
+    shortform_prompt: str
+    style: str
+    caption: str
+    storyboard: list[ShortformScene]
+    job_id: str | None = None
+
+
+class FinishWalkRequest(BaseModel):
+    user_id: str
+    session_id: str
+    target_color: str
+    distance_m: int
+    steps: int
+    duration_sec: int
+    photo_ids: list[str] = []
+    best_match_score: float
+    is_new_spot: bool
+
+
+class FinishWalkResponse(BaseModel):
+    badge: Badge
+    summary: Summary
+    report: Report
+    agent_trace: list[AgentTrace]
+
+
+class ContentGenerationInput(BaseModel):
+    session_id: str
+    target_color: str
+    distance_m: int
+    steps: int
+    duration_sec: int
+    best_match_score: float
+    photo_paths: list[str] = []
+    badge_title: str
+
+
+# ── Response helpers ──────────────────────────────────────────────────────────
 
 class APIResponse(BaseModel):
     data: Any
