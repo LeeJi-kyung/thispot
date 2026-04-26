@@ -1,0 +1,11 @@
+.venv/
+.venv*/
+__pycache__/
+*.pyc
+app/uploads/*
+!app/uploads/.gitkeep
+app/outputs/reports/*
+!app/outputs/reports/.gitkeep
+app/outputs/videos/*
+!app/outputs/videos/.gitkeep
+app/assets/character/*.png

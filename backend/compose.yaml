@@ -1,0 +1,16 @@
+services:
+  api:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - thispot_uploads:/app/app/uploads
+      - thispot_outputs:/app/app/outputs
+    environment:
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: "/app"
+
+volumes:
+  thispot_uploads:
+  thispot_outputs:
