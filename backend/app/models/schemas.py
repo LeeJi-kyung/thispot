@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class AgentTrace(BaseModel):
     agent: str
-    status: Literal["completed", "fallback", "failed"]
+    status: Literal["completed", "fallback", "failed", "queued", "running"]
     message: str
 
 
@@ -52,7 +52,17 @@ class DiscoveryResult(BaseModel):
     message: str
 
 
+class ProofResult(BaseModel):
+    accepted: bool
+    accepted_count: int
+    required_count: int = 5
+    remaining_count: int
+    completion_unlocked: bool
+
+
 class AnalyzePhotoResponse(BaseModel):
+    photo_id: str
+    proof_result: ProofResult
     vision_result: VisionResult
     discovery_result: DiscoveryResult
     agent_trace: list[AgentTrace]
@@ -77,10 +87,19 @@ class Badge(BaseModel):
 
 
 class Report(BaseModel):
+    status: Literal["completed", "fallback", "queued"]
     type: str
     video_url: str
     image_url: str
     thumbnail_url: str
+    share_media_url: str
+    share_media_type: Literal["video", "image"]
+    can_share_to_instagram_story: bool = False
+    generation_job_id: str = ""
+    shortform_prompt: str = ""
+    style: str = ""
+    caption: str = ""
+    storyboard: list[dict[str, str | int]] = Field(default_factory=list)
 
 
 class Summary(BaseModel):
@@ -95,6 +114,13 @@ class FinishWalkResponse(BaseModel):
     report: Report
     summary: Summary
     agent_trace: list[AgentTrace]
+
+
+class GenerationJob(BaseModel):
+    job_id: str
+    status: Literal["queued", "running", "completed", "fallback", "failed"]
+    report: Report | None = None
+    message: str = ""
 
 
 class WalkHarnessContext(BaseModel):
@@ -140,3 +166,10 @@ class ShortformPlan(BaseModel):
     share_caption: str
     storyboard: list[ShortformScene]
     generation_prompt: str
+
+    @field_validator("storyboard")
+    @classmethod
+    def validate_storyboard_length(cls, storyboard: list[ShortformScene]) -> list[ShortformScene]:
+        if len(storyboard) != 5:
+            raise ValueError("storyboard must contain exactly 5 scenes")
+        return storyboard

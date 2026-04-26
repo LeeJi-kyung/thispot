@@ -1,14 +1,13 @@
 from app.models.schemas import AgentTrace, DiscoveryResult, VisionResult
-from app.skills.geo_distance_skill import GeoDistanceSkill
-from app.skills.spot_similarity_skill import SpotSimilaritySkill
-from app.storage.mock_spots import MOCK_SPOTS
+from app.storage.spot_repository import (
+    MERGE_RADIUS_M,
+    nearest_same_color_spot,
+    record_verified_spot,
+    shared_user_percent,
+)
 
 
 class DiscoveryAgent:
-    def __init__(self) -> None:
-        self.geo_distance = GeoDistanceSkill()
-        self.similarity = SpotSimilaritySkill()
-
     def run(
         self,
         *,
@@ -17,14 +16,15 @@ class DiscoveryAgent:
         lng: float | None,
         vision_result: VisionResult,
     ) -> tuple[DiscoveryResult, AgentTrace]:
-        nearest_same_color_m = self._nearest_same_color_distance(target_color, lat, lng)
-        is_shared = nearest_same_color_m is not None and nearest_same_color_m <= 50
+        nearest = nearest_same_color_spot(target_color=target_color, lat=lat, lng=lng)
+        nearest_spot = nearest[0] if nearest and nearest[1] <= MERGE_RADIUS_M else None
+        is_shared = nearest_spot is not None
         color_name = target_color.capitalize()
 
         if is_shared:
             result = DiscoveryResult(
                 is_new_spot=False,
-                shared_user_percent=42,
+                shared_user_percent=shared_user_percent(nearest_spot),
                 message=f"Shared {color_name} Spot found nearby.",
             )
         else:
@@ -41,6 +41,29 @@ class DiscoveryAgent:
         )
         return result, trace
 
+    def record_verified_spot(
+        self,
+        *,
+        user_id: str,
+        session_id: str,
+        photo_id: str,
+        target_color: str,
+        lat: float | None,
+        lng: float | None,
+        vision_result: VisionResult,
+    ) -> None:
+        if not vision_result.is_matched or vision_result.match_score < 0.70:
+            return
+        record_verified_spot(
+            user_id=user_id,
+            session_id=session_id,
+            photo_id=photo_id,
+            target_color=target_color,
+            object_label=vision_result.object_label,
+            lat=lat,
+            lng=lng,
+        )
+
     def fallback(self, target_color: str = "blue") -> tuple[DiscoveryResult, AgentTrace]:
         color_name = target_color.capitalize()
         result = DiscoveryResult(
@@ -53,22 +76,3 @@ class DiscoveryAgent:
             status="fallback",
             message=result.message.rstrip("."),
         )
-
-    def _nearest_same_color_distance(
-        self, target_color: str, lat: float | None, lng: float | None
-    ) -> float | None:
-        if lat is None or lng is None:
-            return None
-        distances = []
-        for spot in MOCK_SPOTS:
-            if not self.similarity.is_same_color(spot["color"], target_color):
-                continue
-            distances.append(
-                self.geo_distance.distance_meters(
-                    lat,
-                    lng,
-                    float(spot["lat"]),
-                    float(spot["lng"]),
-                )
-            )
-        return min(distances) if distances else None

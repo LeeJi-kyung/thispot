@@ -90,9 +90,19 @@ class ReportRenderSkill:
         draw.text((72, 186), "Today's Color", font=font_medium, fill=(51, 65, 85))
         draw.text((72, 244), color.capitalize(), font=font_title, fill=accent)
 
-        character = Image.open(CHARACTER_DIR / "base.png").convert("RGBA")
-        character = character.resize((360, 360))
-        image.paste(character, (646, 118), character)
+        photo = self._first_photo(Image, payload.photo_paths)
+        if photo is not None:
+            photo = self._cover_resize(photo, (360, 360))
+            mask = Image.new("L", (360, 360), 0)
+            mask_draw = ImageDraw.Draw(mask)
+            mask_draw.rounded_rectangle((0, 0, 360, 360), radius=48, fill=255)
+            image.paste(photo, (646, 118), mask)
+            draw.rounded_rectangle((646, 118, 1006, 478), radius=48, outline=(15, 23, 42), width=8)
+            draw.text((666, 498), "mission photo", font=font_small, fill=(51, 65, 85))
+        else:
+            character = Image.open(CHARACTER_DIR / "base.png").convert("RGBA")
+            character = character.resize((360, 360))
+            image.paste(character, (646, 118), character)
 
         card_y = 610
         self._rounded_rect(draw, (72, card_y, 1008, card_y + 560), (255, 255, 255))
@@ -133,11 +143,24 @@ class ReportRenderSkill:
 
         video_path = self._render_mp4_from_image(image_path, file_base)
         base_url = self._base_url()
+        video_url = f"{base_url}/outputs/videos/{video_path.name}" if video_path else ""
+        image_url = f"{base_url}/outputs/reports/{image_path.name}"
+        thumbnail_url = f"{base_url}/outputs/reports/{thumb_path.name}"
         return Report(
+            status="completed" if video_path else "fallback",
             type="video" if video_path else "image",
-            video_url=f"{base_url}/outputs/videos/{video_path.name}" if video_path else "",
-            image_url=f"{base_url}/outputs/reports/{image_path.name}",
-            thumbnail_url=f"{base_url}/outputs/reports/{thumb_path.name}",
+            video_url=video_url,
+            image_url=image_url,
+            thumbnail_url=thumbnail_url,
+            share_media_url=video_url or image_url,
+            share_media_type="video" if video_path else "image",
+            can_share_to_instagram_story=True,
+            shortform_prompt=shortform_plan.generation_prompt if shortform_plan else "",
+            style=shortform_plan.style if shortform_plan else "",
+            caption=shortform_plan.share_caption if shortform_plan else "",
+            storyboard=[
+                scene.model_dump() for scene in shortform_plan.storyboard
+            ] if shortform_plan else [],
         )
 
     def static_demo_report(self, session_id: str = "session_123") -> Report:
@@ -147,11 +170,53 @@ class ReportRenderSkill:
             self._render_mp4_from_image(image_path, "static_demo_report")
         has_video = video_path.exists()
         base_url = self._base_url()
+        video_url = f"{base_url}/outputs/videos/{video_path.name}" if has_video else ""
+        image_url = f"{base_url}/outputs/reports/static_demo_report.jpg"
+        thumbnail_url = f"{base_url}/outputs/reports/static_demo_report_thumb.jpg"
         return Report(
+            status="fallback",
             type="video" if has_video else "image",
-            video_url=f"{base_url}/outputs/videos/{video_path.name}" if has_video else "",
-            image_url=f"{base_url}/outputs/reports/static_demo_report.jpg",
-            thumbnail_url=f"{base_url}/outputs/reports/static_demo_report_thumb.jpg",
+            video_url=video_url,
+            image_url=image_url,
+            thumbnail_url=thumbnail_url,
+            share_media_url=video_url or image_url,
+            share_media_type="video" if has_video else "image",
+            can_share_to_instagram_story=True,
+            shortform_prompt="Vertical 9:16 ThiSpot color mission recap with a cute avatar, mission proof stamp, walk stats, and badge unlock.",
+            style="color-hunt vlog recap",
+            caption="POV: I went outside just to find today's blue.",
+            storyboard=[
+                {
+                    "scene": 1,
+                    "caption": "Mission color unlocked.",
+                    "visual": "ThiSpot mission start screen with the character ready to walk.",
+                    "transition": "quick swipe",
+                },
+                {
+                    "scene": 2,
+                    "caption": "Five accepted proofs collected.",
+                    "visual": "Photo proof grid filling from zero to five accepted images.",
+                    "transition": "snap zoom",
+                },
+                {
+                    "scene": 3,
+                    "caption": "Walk stats roll in.",
+                    "visual": "Distance, steps, and duration animate over the route recap.",
+                    "transition": "fast count-up",
+                },
+                {
+                    "scene": 4,
+                    "caption": "Badge earned.",
+                    "visual": "Finder badge appears with a color-matched proof stamp.",
+                    "transition": "badge pop",
+                },
+                {
+                    "scene": 5,
+                    "caption": "Share the walk.",
+                    "visual": "Vertical recap ending card with ThiSpot branding.",
+                    "transition": "fade out",
+                },
+            ],
         )
 
     def _ensure_character_asset(self) -> None:
@@ -221,6 +286,25 @@ class ReportRenderSkill:
             if Path(candidate).exists():
                 return image_font.truetype(candidate, size=size)
         return image_font.load_default()
+
+    @staticmethod
+    def _first_photo(image_module, photo_paths: list[str]):
+        for photo_path in photo_paths:
+            try:
+                return image_module.open(photo_path).convert("RGB")
+            except Exception:
+                continue
+        return None
+
+    @staticmethod
+    def _cover_resize(image, size: tuple[int, int]):
+        target_width, target_height = size
+        source_width, source_height = image.size
+        scale = max(target_width / source_width, target_height / source_height)
+        resized = image.resize((int(source_width * scale), int(source_height * scale)))
+        left = max(0, (resized.width - target_width) // 2)
+        top = max(0, (resized.height - target_height) // 2)
+        return resized.crop((left, top, left + target_width, top + target_height))
 
     @staticmethod
     def _format_duration(seconds: int) -> str:

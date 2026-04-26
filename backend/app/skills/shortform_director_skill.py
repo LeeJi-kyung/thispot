@@ -3,17 +3,33 @@ from __future__ import annotations
 import json
 import os
 
-from app.models.schemas import ContentGenerationInput, ShortformPlan, ShortformScene
+from app.models.schemas import AgentTrace, ContentGenerationInput, ShortformPlan, ShortformScene
 
 
 class ShortformDirectorSkill:
     def generate(self, payload: ContentGenerationInput) -> ShortformPlan:
+        plan, _ = self.generate_with_trace(payload)
+        return plan
+
+    def generate_with_trace(self, payload: ContentGenerationInput) -> tuple[ShortformPlan, AgentTrace]:
         if os.getenv("GEMINI_API_KEY"):
             try:
-                return self._generate_with_gemini(payload)
+                return self._generate_with_gemini(payload), AgentTrace(
+                    agent="ShortformDirectorSkill",
+                    status="completed",
+                    message="Gemini short-form direction generated",
+                )
             except Exception:
-                return self.fallback(payload)
-        return self.fallback(payload)
+                return self.fallback(payload), AgentTrace(
+                    agent="ShortformDirectorSkill",
+                    status="fallback",
+                    message="Gemini failed; local shortform plan used",
+                )
+        return self.fallback(payload), AgentTrace(
+            agent="ShortformDirectorSkill",
+            status="fallback",
+            message="Gemini unavailable; local shortform plan used",
+        )
 
     def _generate_with_gemini(self, payload: ContentGenerationInput) -> ShortformPlan:
         from google import genai

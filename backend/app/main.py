@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -9,6 +9,7 @@ from app.models.schemas import (
     AnalyzePhotoResponse,
     FinishWalkRequest,
     FinishWalkResponse,
+    GenerationJob,
     LoginDemoRequest,
     LoginDemoResponse,
     RecommendColorRequest,
@@ -75,23 +76,29 @@ async def analyze_photo(
     lng: float | None = Form(None),
     photo: UploadFile = File(...),
 ) -> AnalyzePhotoResponse:
-    try:
-        photo_path = await save_uploaded_photo(session_id, photo)
-        return orchestrator.analyze_photo(
-            user_id=user_id,
-            session_id=session_id,
-            target_color=target_color,
-            lat=lat,
-            lng=lng,
-            photo_path=photo_path,
-        )
-    except Exception:
-        return orchestrator.analyze_photo_fallback(target_color)
+    photo_id, photo_path = await save_uploaded_photo(session_id, photo)
+    return orchestrator.analyze_photo(
+        user_id=user_id,
+        session_id=session_id,
+        target_color=target_color,
+        lat=lat,
+        lng=lng,
+        photo_id=photo_id,
+        photo_path=photo_path,
+    )
 
 
 @app.post("/api/finish-walk", response_model=FinishWalkResponse)
 def finish_walk(request: FinishWalkRequest) -> FinishWalkResponse:
     try:
         return orchestrator.finish_walk(request)
-    except Exception:
-        return orchestrator.finish_walk_fallback()
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.get("/api/generation-jobs/{job_id}", response_model=GenerationJob)
+def generation_job(job_id: str) -> GenerationJob:
+    job = orchestrator.generation_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="generation job not found")
+    return job

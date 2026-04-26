@@ -2,9 +2,12 @@ services:
   api:
     build:
       context: .
+    env_file:
+      - .env
     ports:
       - "8000:8000"
     volumes:
+      - thispot_data:/app/app/data
       - thispot_uploads:/app/app/uploads
       - thispot_outputs:/app/app/outputs
     environment:
@@ -13,5 +16,6 @@ services:
       THISPOT_BASE_URL: "http://localhost:8000"
 
 volumes:
+  thispot_data:
   thispot_uploads:
   thispot_outputs:

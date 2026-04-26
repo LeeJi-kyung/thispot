@@ -14,13 +14,15 @@ from app.models.schemas import (
     DiscoveryResult,
     FinishWalkRequest,
     FinishWalkResponse,
+    GenerationJob,
     LoginDemoResponse,
     RecommendColorRequest,
     RecommendColorResponse,
     Summary,
     VisionResult,
 )
-from app.storage.sessions import get_photo_paths
+from app.storage.generation_jobs import complete_generation_job, create_generation_job, get_generation_job
+from app.storage.sessions import accepted_photo_paths, get_photo_paths, record_photo_proof
 
 
 class WalkHarnessOrchestrator:
@@ -61,6 +63,7 @@ class WalkHarnessOrchestrator:
         target_color: str,
         lat: float | None,
         lng: float | None,
+        photo_id: str,
         photo_path: Path,
     ) -> AnalyzePhotoResponse:
         trace: list[AgentTrace] = []
@@ -80,8 +83,28 @@ class WalkHarnessOrchestrator:
         except Exception:
             discovery_result, discovery_trace = self.discovery_agent.fallback(target_color)
         trace.append(discovery_trace)
+        proof_result = record_photo_proof(
+            session_id=session_id,
+            photo_id=photo_id,
+            image_path=photo_path,
+            vision_result=vision_result,
+            lat=lat,
+            lng=lng,
+        )
+        if proof_result.accepted:
+            self.discovery_agent.record_verified_spot(
+                user_id=user_id,
+                session_id=session_id,
+                photo_id=photo_id,
+                target_color=target_color,
+                lat=lat,
+                lng=lng,
+                vision_result=vision_result,
+            )
 
         return AnalyzePhotoResponse(
+            photo_id=photo_id,
+            proof_result=proof_result,
             vision_result=vision_result,
             discovery_result=discovery_result,
             agent_trace=trace,
@@ -91,6 +114,15 @@ class WalkHarnessOrchestrator:
         vision_result, vision_trace = self.vision_agent.fallback(target_color)
         discovery_result, discovery_trace = self.discovery_agent.fallback(target_color)
         return AnalyzePhotoResponse(
+            photo_id="photo_fallback",
+            proof_result=record_photo_proof(
+                session_id="session_123",
+                photo_id="photo_fallback",
+                image_path=Path("fallback.jpg"),
+                vision_result=vision_result,
+                lat=None,
+                lng=None,
+            ),
             vision_result=vision_result,
             discovery_result=discovery_result,
             agent_trace=[vision_trace, discovery_trace],
@@ -108,7 +140,16 @@ class WalkHarnessOrchestrator:
             badge, reward_trace = self.reward_agent.fallback(request.target_color)
         trace.append(reward_trace)
 
-        photo_paths = [str(path) for path in get_photo_paths(request.session_id, request.photo_ids)]
+        accepted_paths = accepted_photo_paths(request.session_id, limit=5)
+        if len(accepted_paths) < 5:
+            raise ValueError(
+                "MISSION_NOT_COMPLETE: Collect 5 accepted color proofs before finishing this walk."
+            )
+        photo_paths = [
+            str(path)
+            for path in (accepted_paths or get_photo_paths(request.session_id, request.photo_ids))
+        ]
+        generation_job = create_generation_job(status="running", message="Local report generation running")
         try:
             report, content_trace = self.content_agent.run(
                 ContentGenerationInput(
@@ -123,8 +164,22 @@ class WalkHarnessOrchestrator:
                     badge_title=badge.title,
                 )
             )
+            report.generation_job_id = generation_job.job_id
+            complete_generation_job(
+                generation_job.job_id,
+                report=report,
+                status=content_trace.status if content_trace.status in {"completed", "fallback"} else "completed",
+                message=content_trace.message,
+            )
         except Exception:
             report, content_trace = self.content_agent.fallback(request.session_id)
+            report.generation_job_id = generation_job.job_id
+            complete_generation_job(
+                generation_job.job_id,
+                report=report,
+                status="fallback",
+                message=content_trace.message,
+            )
         trace.append(content_trace)
 
         return FinishWalkResponse(
@@ -133,6 +188,9 @@ class WalkHarnessOrchestrator:
             summary=self._summary(request),
             agent_trace=trace,
         )
+
+    def generation_job(self, job_id: str) -> GenerationJob | None:
+        return get_generation_job(job_id)
 
     def finish_walk_fallback(self) -> FinishWalkResponse:
         request = FinishWalkRequest()

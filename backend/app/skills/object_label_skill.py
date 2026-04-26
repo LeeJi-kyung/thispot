@@ -1,5 +1,5 @@
 class ObjectLabelSkill:
-    """Reserved for post-MVP object labels. Not used by the demo stub."""
+    """Deterministic object labels for the local MVP color matcher."""
 
     def label(self, image_path: str, color: str = "blue") -> str:
         labels = {
