@@ -26,7 +26,7 @@ Output:
 }
 ```
 
-Rule: select from `red, orange, yellow, green, blue, indigo, violet`; prefer colors not present in the last 3 records.
+Rule: select from `red, orange, yellow, green, blue, violet, white, black`; prefer colors not present in the last 3 records.
 
 ## 2. VisionMissionAgent
 
@@ -86,8 +86,8 @@ Output:
 
 ```json
 {
-  "title": "Blue Finder",
-  "description": "You found today's blue during your walk.",
+  "title": "Blue First Finder",
+  "description": "You were one of the first to find today's blue spot.",
   "rarity": "rare"
 }
 ```

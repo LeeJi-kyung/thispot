@@ -105,6 +105,12 @@ Core walk session:
 }
 ```
 
+Mission colors:
+
+```text
+red, orange, yellow, green, blue, violet, white, black
+```
+
 Vision mission result:
 
 ```json
@@ -165,3 +171,5 @@ class WalkHarnessContext(BaseModel):
 4. iOS can complete the demo with backend down by using fixed mock responses.
 5. Demo fallback target is `blue`, match score `0.87`, distance `1.24km`, steps `1,843`.
 6. Content generation failure falls back to an image report.
+
+MVP exception: `/api/recommend-color` uses the compact README response shape and does not include `agent_trace`.

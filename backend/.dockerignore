@@ -1,0 +1,15 @@
+.venv/
+.venv313/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+app/__pycache__/
+app/**/__pycache__/
+app/uploads/*
+!app/uploads/.gitkeep
+app/outputs/reports/*
+!app/outputs/reports/.gitkeep
+!app/outputs/reports/static_demo_report.jpg
+!app/outputs/reports/static_demo_report_thumb.jpg
+app/outputs/videos/*
+!app/outputs/videos/.gitkeep

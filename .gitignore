@@ -87,6 +87,7 @@ fastlane/test_output
 iOSInjectionProject/
 
 *.xcconfig
+.env
 
 # Team-shared skills / harness docs (kept local, not pushed)
 skills/

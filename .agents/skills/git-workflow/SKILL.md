@@ -1,6 +1,6 @@
 ---
 name: git-workflow
-description: "ThiSpot cmux multi-agent workflow, lane ownership, prompts, and merge rules."
+description: cmux workflow for ThiSpot.
 ---
 
 # ThiSpot cmux Multi-Agent Workflow Skill

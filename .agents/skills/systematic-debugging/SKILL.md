@@ -1,6 +1,6 @@
 ---
 name: systematic-debugging
-description: "ThiSpot VisionMissionAgent for photo color matching, object feedback, and mission proof."
+description: Vision mission proof for ThiSpot.
 ---
 
 # ThiSpot VisionMissionAgent Skill

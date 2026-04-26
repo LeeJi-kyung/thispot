@@ -88,6 +88,8 @@ Do not add real OAuth, production DB, real social graph, complex segmentation, o
 
 Backend runs at `http://localhost:8000`.
 
+Mission colors are `red`, `orange`, `yellow`, `green`, `blue`, `violet`, `white`, and `black`.
+
 ### `POST /api/login-demo`
 
 Request:
@@ -112,6 +114,8 @@ Response:
 ```
 
 ### `POST /api/recommend-color`
+
+This endpoint intentionally follows the compact README response shape and does not return `agent_trace` in the MVP.
 
 Request:
 
@@ -200,8 +204,8 @@ Response:
 ```json
 {
   "badge": {
-    "title": "Blue Finder",
-    "description": "You found today's blue during your walk.",
+    "title": "Blue First Finder",
+    "description": "You were one of the first to find today's blue spot.",
     "rarity": "rare"
   },
   "report": {
@@ -220,7 +224,7 @@ Response:
     {
       "agent": "RewardAgent",
       "status": "completed",
-      "message": "Blue Finder badge created"
+      "message": "Blue First Finder badge created"
     },
     {
       "agent": "ContentGenerationAgent",
@@ -235,7 +239,7 @@ Response:
 
 ```text
 PersonalWalkAgent
-- picks today's color from rainbow colors
+- picks today's color from red, orange, yellow, green, blue, violet, white, black
 - avoids recent repeats when possible
 - updates character outfit/theme color
 
