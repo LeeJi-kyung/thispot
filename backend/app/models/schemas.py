@@ -3,6 +3,14 @@ from typing import Any
 from pydantic import BaseModel
 
 
+class ColorEntry(BaseModel):
+    name: str
+    hex: str
+    rgb: list[int]
+    percent: float
+    category: str | None = None  # one of 8 categories or "none"
+
+
 class VisionResult(BaseModel):
     detected_color: str
     match_score: float

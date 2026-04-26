@@ -3,12 +3,12 @@
 import numpy as np
 from PIL import Image
 
-from app.skills.image_color_skill import _circular_dist, _hue_to_color_name, _rgb_to_hsv
+from app.skills.image_color_skill import _circular_dist, _hue_to_color_name, _rgb_to_hsv_vec
 
 
 def _region_dominant_color(region: np.ndarray) -> tuple[str | None, float]:
     """Return (color_name, avg_saturation) for a pixel region."""
-    hsv = _rgb_to_hsv(region)
+    hsv = _rgb_to_hsv_vec(region)
     h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
     mask = (s > 0.20) & (v > 0.20)
     if mask.sum() < 5:
