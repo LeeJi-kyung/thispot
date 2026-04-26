@@ -1,6 +1,6 @@
 ---
 name: project-intake
-description: "ThiSpot MVP scope, product positioning, and demo boundaries."
+description: Product scope for ThiSpot.
 ---
 
 # ThiSpot Product Intake
