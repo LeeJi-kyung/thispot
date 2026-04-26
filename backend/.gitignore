@@ -9,4 +9,5 @@ app/outputs/reports/*
 app/outputs/videos/*
 !app/outputs/videos/.gitkeep
 app/assets/character/*.png
+!app/assets/character/main.png
 .env

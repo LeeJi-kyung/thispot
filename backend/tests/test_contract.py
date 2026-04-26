@@ -44,46 +44,27 @@ def test_recommend_color_contract() -> None:
 
     assert response.status_code == 200
     assert body == {
-        "target_color": "yellow",
-        "mission_title": "Yellow Energy Walk",
-        "mission_text": "Find yellow moments during today's walk.",
-        "character_outfit_color": "yellow",
+        "target_color": "green",
+        "mission_title": "Green Energy Walk",
+        "mission_text": "Find green moments during today's walk.",
+        "character_outfit_color": "green",
     }
 
 
-def test_recommend_color_uses_white_and_black_palette() -> None:
-    response = client.post(
-        "/api/recommend-color",
-        json={"user_id": "demo_user", "previous_colors": ["blue", "yellow", "orange"]},
-    )
-    body = response.json()
+def test_recommend_color_is_demo_green_for_any_history() -> None:
+    for previous_colors in [
+        ["blue", "yellow", "orange"],
+        ["red", "blue", "yellow", "orange"],
+        ["red", "green", "blue", "yellow", "orange"],
+    ]:
+        response = client.post(
+            "/api/recommend-color",
+            json={"user_id": "demo_user", "previous_colors": previous_colors},
+        )
+        body = response.json()
 
-    assert response.status_code == 200
-    assert body["target_color"] == "violet"
-
-    response = client.post(
-        "/api/recommend-color",
-        json={
-            "user_id": "demo_user",
-            "previous_colors": ["red", "blue", "yellow", "orange"],
-        },
-    )
-    body = response.json()
-
-    assert response.status_code == 200
-    assert body["target_color"] == "white"
-
-    response = client.post(
-        "/api/recommend-color",
-        json={
-            "user_id": "demo_user",
-            "previous_colors": ["red", "green", "blue", "yellow", "orange"],
-        },
-    )
-    body = response.json()
-
-    assert response.status_code == 200
-    assert body["target_color"] == "black"
+        assert response.status_code == 200
+        assert body["target_color"] == "green"
 
 
 def test_analyze_photo_contract() -> None:
@@ -245,6 +226,8 @@ def test_finish_walk_contract_and_static_outputs(monkeypatch) -> None:
     assert response.status_code == 200
     assert body["badge"]["title"] == "Blue First Finder"
     assert body["badge"]["rarity"] == "rare"
+    assert "image_url" in body["badge"]
+    assert body["badge"]["image_url"] is None
     assert body["summary"]["subtitle"] == "1.24km - 1,843 steps - 87% color match"
     assert {
         "status",

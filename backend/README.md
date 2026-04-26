@@ -50,12 +50,19 @@ agent trace as `fallback`.
 ```bash
 export GEMINI_API_KEY="your-key"
 export GEMINI_MODEL="gemini-2.5-flash"
+export GEMINI_IMAGE_MODEL="gemini-3.1-flash-image-preview"
 ```
 
 Gemini output is exposed in the public `report` response as `shortform_prompt`,
 `style`, `caption`, and `storyboard`. If Gemini is unavailable or fails, the
 same fields are filled by a deterministic local plan and `agent_trace` marks the
 content step as `fallback`.
+
+When `GEMINI_API_KEY` is configured, `RewardAgent` also attempts to generate a
+final vertical badge image from the 5 accepted proof photos and
+`app/assets/character/main.png`. The generated URL is returned as
+`badge.image_url`. If image generation is unavailable, the badge copy still
+returns and `image_url` is `null`.
 
 ## Instagram Story Share Contract
 
@@ -90,6 +97,17 @@ curl -X POST http://localhost:8000/api/analyze-photo -F user_id=demo_user -F ses
 curl -X POST http://localhost:8000/api/finish-walk -H "Content-Type: application/json" -d '{"user_id":"demo_user","session_id":"session_123","target_color":"blue","distance_m":1240,"steps":1843,"duration_sec":720,"photo_ids":[],"best_match_score":0.87,"is_new_spot":true}'
 curl http://localhost:8000/api/walk-archive/demo_user
 curl http://localhost:8000/api/generation-jobs/{generation_job_id}
+```
+
+Demo `/api/recommend-color` is fixed to green:
+
+```json
+{
+  "target_color": "green",
+  "mission_title": "Green Energy Walk",
+  "mission_text": "Find green moments during today's walk.",
+  "character_outfit_color": "green"
+}
 ```
 
 For real photo testing, upload one or more photos with the same `session_id`,

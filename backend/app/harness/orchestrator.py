@@ -132,21 +132,25 @@ class WalkHarnessOrchestrator:
 
     def finish_walk(self, request: FinishWalkRequest) -> FinishWalkResponse:
         trace: list[AgentTrace] = []
-        try:
-            badge, reward_trace = self.reward_agent.run(
-                target_color=request.target_color,
-                best_match_score=request.best_match_score,
-                is_new_spot=request.is_new_spot,
-            )
-        except Exception:
-            badge, reward_trace = self.reward_agent.fallback(request.target_color)
-        trace.append(reward_trace)
-
         accepted_paths = accepted_photo_paths(request.session_id, limit=5)
         if len(accepted_paths) < 5:
             raise ValueError(
                 "MISSION_NOT_COMPLETE: Collect 5 accepted color proofs before finishing this walk."
             )
+
+        try:
+            badge, reward_trace = self.reward_agent.run(
+                target_color=request.target_color,
+                best_match_score=request.best_match_score,
+                is_new_spot=request.is_new_spot,
+                session_id=request.session_id,
+                photo_paths=accepted_paths,
+                base_url=self.base_url,
+            )
+        except Exception:
+            badge, reward_trace = self.reward_agent.fallback(request.target_color)
+        trace.append(reward_trace)
+
         photo_paths = [
             str(path)
             for path in (accepted_paths or get_photo_paths(request.session_id, request.photo_ids))

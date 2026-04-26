@@ -84,6 +84,7 @@ class Badge(BaseModel):
     title: str
     description: str
     rarity: Literal["standard", "rare", "common"]
+    image_url: str | None = None
 
 
 class Report(BaseModel):
