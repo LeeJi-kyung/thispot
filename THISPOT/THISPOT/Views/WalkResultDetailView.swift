@@ -10,6 +10,7 @@ import SwiftUI
 struct WalkResultDetailView: View {
     let color: WalkColor
     var imageURL: URL? = nil
+    var badge: ThiSpotAPI.FinishWalkResponse.Badge? = nil
     let onBack: () -> Void
     let onHome: () -> Void
 
@@ -40,33 +41,21 @@ struct WalkResultDetailView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 28)
 
-                Spacer(minLength: 16)
-
-                VStack(spacing: 6) {
-                    Text("Today's Result")
-                        .font(.system(size: 12, weight: .bold))
-                        .tracking(1.8)
-                        .textCase(.uppercase)
-                        .foregroundColor(brandBrown.opacity(0.75))
-
-                    Text("\(color.displayName) Story")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(textDark)
-                }
-
-                Spacer(minLength: 20)
+                Spacer()
 
                 resultPng
-                    .padding(.horizontal, 28)
+                    .padding(.horizontal, 20)
                     .scaleEffect(entryScale)
                     .opacity(entryOpacity)
 
-                Spacer()
+                if let badge {
+                    badgeCard(badge)
+                        .padding(.top, 20)
+                        .padding(.horizontal, 28)
+                        .opacity(entryOpacity)
+                }
 
-                Text("More results will appear here soon.")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(brandBrown.opacity(0.65))
-                    .padding(.bottom, 28)
+                Spacer()
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -140,6 +129,41 @@ struct WalkResultDetailView: View {
                     .font(.system(size: 70))
                     .foregroundColor(brandBrown.opacity(0.4))
             }
+        }
+    }
+
+    @ViewBuilder
+    private func badgeCard(_ badge: ThiSpotAPI.FinishWalkResponse.Badge) -> some View {
+        VStack(spacing: 8) {
+            Text(badge.title)
+                .font(.system(size: 19, weight: .bold))
+                .foregroundColor(textDark)
+                .multilineTextAlignment(.center)
+
+            Text(badge.description)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(brandBrown.opacity(0.85))
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+
+            Text(badge.rarity.uppercased())
+                .font(.system(size: 10, weight: .heavy))
+                .tracking(1.8)
+                .foregroundColor(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(Capsule().fill(rarityColor(badge.rarity)))
+                .padding(.top, 4)
+        }
+    }
+
+    private func rarityColor(_ rarity: String) -> Color {
+        switch rarity.lowercased() {
+        case "common":    return Color(red: 0.55, green: 0.55, blue: 0.55)
+        case "rare":      return color.color
+        case "epic":      return Color(red: 0.55, green: 0.35, blue: 0.75)
+        case "legendary": return Color(red: 0.92, green: 0.62, blue: 0.20)
+        default:          return color.color
         }
     }
 

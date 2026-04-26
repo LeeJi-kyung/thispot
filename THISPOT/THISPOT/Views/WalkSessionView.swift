@@ -48,6 +48,7 @@ struct WalkSessionView: View {
     // Finish state
     @State private var isFinishing = false
     @State private var serverImageURL: URL? = nil
+    @State private var serverBadge: ThiSpotAPI.FinishWalkResponse.Badge? = nil
 
     // Pulse + reveal animation
     @State private var pickPulse = false
@@ -86,6 +87,7 @@ struct WalkSessionView: View {
                     WalkResultDetailView(
                         color: report.color,
                         imageURL: serverImageURL,
+                        badge: serverBadge,
                         onBack: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 phase = .result
@@ -292,6 +294,8 @@ struct WalkSessionView: View {
                 bestMatchScore: bestMatchScore,
                 isNewSpot: isNewSpot
             )
+
+            serverBadge = resp.badge
 
             // Resolve final report — poll if queued.
             var finalReport: ThiSpotAPI.FinishWalkResponse.Report? = resp.report
