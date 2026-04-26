@@ -20,9 +20,11 @@ from app.models.schemas import (
     RecommendColorResponse,
     Summary,
     VisionResult,
+    WalkArchiveItem,
 )
 from app.storage.generation_jobs import complete_generation_job, create_generation_job, get_generation_job
 from app.storage.sessions import accepted_photo_paths, get_photo_paths, record_photo_proof
+from app.storage.walk_archive import archive_completed_walk, list_archived_walks
 
 
 class WalkHarnessOrchestrator:
@@ -182,15 +184,20 @@ class WalkHarnessOrchestrator:
             )
         trace.append(content_trace)
 
-        return FinishWalkResponse(
+        response = FinishWalkResponse(
             badge=badge,
             report=report,
             summary=self._summary(request),
             agent_trace=trace,
         )
+        archive_completed_walk(request=request, response=response, base_url=self.base_url)
+        return response
 
     def generation_job(self, job_id: str) -> GenerationJob | None:
         return get_generation_job(job_id)
+
+    def walk_archive(self, user_id: str, limit: int = 50) -> list[WalkArchiveItem]:
+        return list_archived_walks(user_id, limit=limit)
 
     def finish_walk_fallback(self) -> FinishWalkResponse:
         request = FinishWalkRequest()

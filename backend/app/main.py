@@ -14,6 +14,7 @@ from app.models.schemas import (
     LoginDemoResponse,
     RecommendColorRequest,
     RecommendColorResponse,
+    WalkArchiveResponse,
 )
 from app.skills.report_render_skill import ReportRenderSkill
 from app.storage.sessions import ensure_storage_dirs, save_uploaded_photo
@@ -23,6 +24,7 @@ APP_DIR = Path(__file__).resolve().parent
 REPORTS_DIR = APP_DIR / "outputs" / "reports"
 VIDEOS_DIR = APP_DIR / "outputs" / "videos"
 CHARACTER_DIR = APP_DIR / "assets" / "character"
+UPLOADS_DIR = APP_DIR / "uploads"
 
 
 app = FastAPI(title="ThiSpot Backend", version="0.1.0")
@@ -50,6 +52,7 @@ ensure_demo_assets()
 app.mount("/outputs/reports", StaticFiles(directory=REPORTS_DIR), name="reports")
 app.mount("/outputs/videos", StaticFiles(directory=VIDEOS_DIR), name="videos")
 app.mount("/assets/character", StaticFiles(directory=CHARACTER_DIR), name="character")
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 
 @app.get("/health")
@@ -102,3 +105,10 @@ def generation_job(job_id: str) -> GenerationJob:
     if job is None:
         raise HTTPException(status_code=404, detail="generation job not found")
     return job
+
+
+@app.get("/api/walk-archive/{user_id}", response_model=WalkArchiveResponse)
+def walk_archive(user_id: str, limit: int = 50) -> WalkArchiveResponse:
+    bounded_limit = max(1, min(limit, 100))
+    items = orchestrator.walk_archive(user_id, limit=bounded_limit)
+    return WalkArchiveResponse(user_id=user_id, total=len(items), items=items)

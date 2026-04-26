@@ -88,6 +88,7 @@ curl -X POST http://localhost:8000/api/login-demo -H "Content-Type: application/
 curl -X POST http://localhost:8000/api/recommend-color -H "Content-Type: application/json" -d '{"user_id":"demo_user","previous_colors":["red","green","blue"]}'
 curl -X POST http://localhost:8000/api/analyze-photo -F user_id=demo_user -F session_id=session_123 -F target_color=blue -F photo=@/absolute/path/to/photo.jpg
 curl -X POST http://localhost:8000/api/finish-walk -H "Content-Type: application/json" -d '{"user_id":"demo_user","session_id":"session_123","target_color":"blue","distance_m":1240,"steps":1843,"duration_sec":720,"photo_ids":[],"best_match_score":0.87,"is_new_spot":true}'
+curl http://localhost:8000/api/walk-archive/demo_user
 curl http://localhost:8000/api/generation-jobs/{generation_job_id}
 ```
 
@@ -105,6 +106,19 @@ with the same target color within 50m is returned as a shared spot; otherwise it
 creates a new spot. This replaces fixed mock spots while keeping the public
 `discovery_result` contract unchanged.
 
+## Walk Archive
+
+Successful `/api/finish-walk` calls are archived in `app/data/walk_archive.json`.
+Use `GET /api/walk-archive/{user_id}` to fetch previous walks for the profile.
+Each archive item includes:
+
+- `created_at` and `date`
+- `target_color`
+- `distance_m`, `steps`, `duration_sec`, `best_match_score`
+- accepted proof photo URLs from `/uploads/{filename}`
+- generated `report`
+- `badge` and `summary`
+
 Run contract tests inside Docker:
 
 ```bash
@@ -118,10 +132,12 @@ docker compose run --rm api pytest -q
 - `POST /api/recommend-color`
 - `POST /api/analyze-photo`
 - `POST /api/finish-walk`
+- `GET /api/walk-archive/{user_id}`
 - `GET /api/generation-jobs/{job_id}`
 - `GET /outputs/reports/{filename}`
 - `GET /outputs/videos/{filename}`
 - `GET /assets/character/{filename}`
+- `GET /uploads/{filename}`
 
 Provider fallbacks are explicit in `agent_trace`. `VisionMissionAgent` uses
 Gemini when `GEMINI_API_KEY` is configured and falls back to local Pillow color

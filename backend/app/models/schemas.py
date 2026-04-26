@@ -123,6 +123,39 @@ class GenerationJob(BaseModel):
     message: str = ""
 
 
+class ArchivedPhoto(BaseModel):
+    photo_id: str
+    image_url: str
+    match_score: float
+    object_label: str
+    lat: float | None = None
+    lng: float | None = None
+
+
+class WalkArchiveItem(BaseModel):
+    archive_id: str
+    user_id: str
+    session_id: str
+    created_at: str
+    date: str
+    target_color: str
+    distance_m: float
+    steps: int
+    duration_sec: int
+    best_match_score: float
+    is_new_spot: bool
+    photos: list[ArchivedPhoto]
+    badge: Badge
+    summary: Summary
+    report: Report
+
+
+class WalkArchiveResponse(BaseModel):
+    user_id: str
+    total: int
+    items: list[WalkArchiveItem]
+
+
 class WalkHarnessContext(BaseModel):
     user_id: str = "demo_user"
     session_id: str = "session_123"

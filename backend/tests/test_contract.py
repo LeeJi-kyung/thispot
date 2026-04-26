@@ -204,12 +204,13 @@ def test_analyze_photo_rejects_invalid_uploads() -> None:
 def test_finish_walk_contract_and_static_outputs(monkeypatch) -> None:
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     session_id = f"session_finish_contract_{uuid4().hex}"
+    user_id = f"archive_user_{uuid4().hex}"
     photo_ids = []
     for _ in range(5):
         photo_response = client.post(
             "/api/analyze-photo",
             data={
-                "user_id": "demo_user",
+                "user_id": user_id,
                 "session_id": session_id,
                 "target_color": "blue",
                 "lat": "37.5665",
@@ -228,7 +229,7 @@ def test_finish_walk_contract_and_static_outputs(monkeypatch) -> None:
     response = client.post(
         "/api/finish-walk",
         json={
-            "user_id": "demo_user",
+            "user_id": user_id,
             "session_id": session_id,
             "target_color": "blue",
             "distance_m": 1240,
@@ -294,6 +295,28 @@ def test_finish_walk_contract_and_static_outputs(monkeypatch) -> None:
     assert job_response.status_code == 200
     assert job_body["status"] == "fallback"
     assert job_body["report"]["image_url"] == body["report"]["image_url"]
+
+    archive_response = client.get(f"/api/walk-archive/{user_id}")
+    archive_body = archive_response.json()
+
+    assert archive_response.status_code == 200
+    assert archive_body["user_id"] == user_id
+    assert archive_body["total"] == 1
+    archived = archive_body["items"][0]
+    assert archived["session_id"] == session_id
+    assert archived["date"]
+    assert archived["target_color"] == "blue"
+    assert archived["distance_m"] == 1240
+    assert archived["steps"] == 1843
+    assert archived["duration_sec"] == 720
+    assert archived["best_match_score"] == 0.87
+    assert archived["badge"]["title"] == body["badge"]["title"]
+    assert archived["summary"]["title"] == body["summary"]["title"]
+    assert archived["report"]["image_url"] == body["report"]["image_url"]
+    assert len(archived["photos"]) == 5
+    first_photo_path = archived["photos"][0]["image_url"].replace("http://localhost:8000", "")
+    assert first_photo_path.startswith("/uploads/")
+    assert client.get(first_photo_path).status_code == 200
 
 
 def test_finish_walk_requires_five_accepted_proofs() -> None:

@@ -126,6 +126,12 @@ def accepted_photo_paths(session_id: str, limit: int | None = None) -> list[Path
     return paths[:limit] if limit else paths
 
 
+def accepted_photo_records(session_id: str, limit: int | None = None) -> list[dict]:
+    clean_session = safe_id(session_id)
+    proofs = [proof for proof in _proofs(clean_session) if proof["accepted"]]
+    return proofs[:limit] if limit else proofs
+
+
 def get_photo_paths(session_id: str, photo_ids: list[str] | None = None) -> list[Path]:
     clean_session = safe_id(session_id)
     stored_paths = [Path(path) for path in _session_record(SESSION_STORE.read(), clean_session).get("photos", [])]
