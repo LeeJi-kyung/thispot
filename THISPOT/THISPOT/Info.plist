@@ -2,12 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- DEV ONLY: lets the app reach http://localhost:8000 backend.
+		     Tighten or remove for production. -->
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>We use the camera so you can capture moments along your walk.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We use your photo library to pick a walk memory when the camera isn't available.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>We save the photos you capture during walks to your Photos library.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We use your location to show where you're walking today.</string>
 	<key>UIAppFonts</key>

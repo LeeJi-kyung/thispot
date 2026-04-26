@@ -14,7 +14,7 @@ final class WeatherManager: ObservableObject {
     // Defaults double as mock fallback when WeatherKit is unavailable
     // (capability not yet enabled, no network, propagation delay, etc.)
     @Published var symbol: String = "☀️"
-    @Published var temperatureText: String = "18°"
+    @Published var temperatureText: String = "22°"
 
     private let service = WeatherService.shared
 

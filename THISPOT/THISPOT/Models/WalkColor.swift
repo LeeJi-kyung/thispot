@@ -44,4 +44,11 @@ enum WalkColor: String, CaseIterable {
     static func random() -> WalkColor {
         WalkColor.allCases.randomElement() ?? .green
     }
+
+    /// Maps a backend `target_color` string to the local enum.
+    /// Backend may return colors not in our palette (e.g. white/black) —
+    /// those fall back to green for now.
+    static func from(apiName: String) -> WalkColor {
+        WalkColor(rawValue: apiName.lowercased()) ?? .green
+    }
 }

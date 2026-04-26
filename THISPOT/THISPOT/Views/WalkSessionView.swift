@@ -8,7 +8,6 @@
 import SwiftUI
 import MapKit
 import CoreLocation
-import Photos
 
 struct WalkSessionView: View {
     let nickname: String
@@ -17,6 +16,13 @@ struct WalkSessionView: View {
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var tracker = WalkTracker()
+
+    private enum Phase { case walking, result, detail }
+    @State private var phase: Phase = .walking
+    @State private var report: WalkReport? = nil
+
+    @State private var walkID = UUID().uuidString
+    @State private var walkStartTime = Date()
 
     @State private var cameraPosition: MapCameraPosition = .userLocation(
         followsHeading: false,
@@ -27,12 +33,27 @@ struct WalkSessionView: View {
     @State private var showCamera = false
     @State private var capturedImage: UIImage? = nil
     @State private var capturedImages: [UIImage] = []
-    @State private var selectedPhoto: PhotoSelection? = nil
+    @State private var photoIDs: [String] = []
+    @State private var showPotGallery = false
+
+    // Upload state
+    @State private var uploadInFlight = false
+    @State private var feedbackText: String? = nil
+    @State private var feedbackIsSuccess = false
+
+    // Aggregated for /api/finish-walk
+    @State private var bestMatchScore: Double = 0
+    @State private var isNewSpot: Bool = false
+
+    // Finish state
+    @State private var isFinishing = false
+    @State private var serverImageURL: URL? = nil
 
     // Pulse + reveal animation
     @State private var pickPulse = false
     @State private var showReveal = true
     @State private var revealScale: CGFloat = 0.65
+    @State private var potBounceScale: CGFloat = 1.0
 
     private let backgroundCream = Color(red: 0.973, green: 0.965, blue: 0.953)
     private let brandGreen      = Color(red: 0.502, green: 0.651, blue: 0.388)
@@ -40,8 +61,50 @@ struct WalkSessionView: View {
     private let textDark        = Color(red: 0.20, green: 0.20, blue: 0.20)
 
     var body: some View {
+        Group {
+            switch phase {
+            case .walking:
+                walkingPhase
+            case .result:
+                if let report {
+                    WalkResultView(
+                        nickname: nickname,
+                        report: report,
+                        photos: capturedImages,
+                        serverImageURL: serverImageURL,
+                        onHome: { dismiss() },
+                        onViewDetail: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                phase = .detail
+                            }
+                        }
+                    )
+                    .transition(.opacity)
+                }
+            case .detail:
+                if let report {
+                    WalkResultDetailView(
+                        color: report.color,
+                        imageURL: serverImageURL,
+                        onBack: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                phase = .result
+                            }
+                        },
+                        onHome: { dismiss() }
+                    )
+                    .transition(.opacity)
+                }
+            }
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    // MARK: - Walking phase
+    private var walkingPhase: some View {
         ZStack {
-            // MARK: - Map
+            // MARK: Map
             Map(position: $cameraPosition) {
                 UserAnnotation()
                 if tracker.path.count >= 2 {
@@ -52,8 +115,9 @@ struct WalkSessionView: View {
             .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
             .ignoresSafeArea()
 
-            // Cream tint to harmonize the map with the rest of the app
-            backgroundCream.opacity(0.18).ignoresSafeArea().allowsHitTesting(false)
+            backgroundCream.opacity(0.18)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
 
             VStack(spacing: 0) {
                 topBar
@@ -62,37 +126,35 @@ struct WalkSessionView: View {
 
                 Spacer()
 
-                if !capturedImages.isEmpty {
-                    photoStrip
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 12)
-                }
-
                 bottomBar
                     .padding(.horizontal, 24)
                     .padding(.bottom, 36)
             }
 
-            // MARK: - Today's Color reveal (splash-style)
+            // MARK: Today's Color reveal (splash-style)
             if showReveal {
                 colorReveal
                     .transition(.opacity)
                     .zIndex(10)
             }
+
+            // MARK: Upload feedback toast
+            if let text = feedbackText {
+                feedbackToast(text: text, isSuccess: feedbackIsSuccess)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(20)
+            }
         }
-        .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .navigationBar)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: feedbackText)
         .task {
             tracker.start()
             withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) {
                 pickPulse = true
             }
-            // Spring the reveal text in after the view settles
             try? await Task.sleep(for: .milliseconds(80))
             withAnimation(.spring(response: 0.55, dampingFraction: 0.65)) {
                 revealScale = 1.0
             }
-            // Hold then fade out to map
             try? await Task.sleep(for: .milliseconds(1700))
             withAnimation(.easeInOut(duration: 0.45)) {
                 showReveal = false
@@ -101,16 +163,26 @@ struct WalkSessionView: View {
         .onDisappear { tracker.stop() }
         .onChange(of: capturedImage) { _, newValue in
             guard let img = newValue else { return }
-            capturedImages.append(img)
-            saveToPhotoLibrary(img)
             capturedImage = nil
+            Task { await uploadAndStore(img) }
         }
         .fullScreenCover(isPresented: $showCamera) {
             CameraPicker(image: $capturedImage)
                 .ignoresSafeArea()
         }
-        .fullScreenCover(item: $selectedPhoto) { selection in
-            PhotoViewer(image: capturedImages[selection.index])
+        .fullScreenCover(isPresented: $showPotGallery) {
+            PotGalleryView(photos: capturedImages, color: todaysColor)
+        }
+    }
+
+    private func triggerPotBounce() {
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.45)) {
+            potBounceScale = 1.20
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20) {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) {
+                potBounceScale = 1.0
+            }
         }
     }
 
@@ -165,22 +237,84 @@ struct WalkSessionView: View {
 
     private var finishButton: some View {
         Button {
-            finishWalk()
+            Task { await finishWalk() }
         } label: {
-            Text("Finish")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 11)
-                .background(Capsule().fill(brandBrown))
-                .shadow(color: brandBrown.opacity(0.30), radius: 6, x: 0, y: 3)
+            ZStack {
+                Text("Finish")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .opacity(isFinishing ? 0 : 1)
+                if isFinishing {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(.white)
+                        .scaleEffect(0.8)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 11)
+            .background(Capsule().fill(brandBrown))
+            .shadow(color: brandBrown.opacity(0.30), radius: 6, x: 0, y: 3)
         }
         .buttonStyle(PressableScaleStyle())
+        .disabled(isFinishing)
     }
 
-    private func finishWalk() {
+    private func finishWalk() async {
+        guard !isFinishing else { return }
+        isFinishing = true
+        defer { isFinishing = false }
+
         tracker.stop()
-        dismiss()
+        let durationSec = max(1, Int(Date().timeIntervalSince(walkStartTime)))
+        let distanceM = Int(tracker.distanceMeters.rounded())
+
+        // Local report — used immediately for the result screen, even if the
+        // server call fails so the user always sees a report card.
+        let localReport = WalkReport(
+            id: UUID(uuidString: walkID) ?? UUID(),
+            color: todaysColor,
+            distanceMeters: tracker.distanceMeters,
+            durationSec: durationSec,
+            photoCount: capturedImages.count,
+            endedAt: Date()
+        )
+
+        do {
+            let resp = try await ThiSpotAPI.finishWalk(
+                userID: "demo_user",
+                sessionID: walkID,
+                targetColor: todaysColor.rawValue,
+                distanceM: distanceM,
+                steps: 0, // TODO: integrate CMPedometer
+                durationSec: durationSec,
+                photoIDs: photoIDs,
+                bestMatchScore: bestMatchScore,
+                isNewSpot: isNewSpot
+            )
+
+            if let urlStr = resp.report?.image_url, let url = URL(string: urlStr) {
+                // Download once, save to disk so Records picks it up too.
+                // Detail view then renders the local file (no second fetch).
+                if let localURL = await WalkPhotoStore.saveRemoteReport(
+                    from: url, walkID: walkID
+                ) {
+                    serverImageURL = localURL
+                } else {
+                    serverImageURL = url // remote fallback if save failed
+                }
+            }
+        } catch {
+            #if DEBUG
+            print("[finishWalk] failed:", error)
+            #endif
+            // Continue to result screen even on failure
+        }
+
+        report = localReport
+        withAnimation(.easeInOut(duration: 0.4)) {
+            phase = .result
+        }
     }
 
     private var distanceCard: some View {
@@ -237,42 +371,6 @@ struct WalkSessionView: View {
         }
     }
 
-    // MARK: - Photo strip (above bottom controls)
-    private var photoStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(Array(capturedImages.enumerated()), id: \.offset) { idx, img in
-                    Button {
-                        selectedPhoto = PhotoSelection(index: idx)
-                    } label: {
-                        Image(uiImage: img)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 64, height: 64)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .stroke(Color.white, lineWidth: 2)
-                            )
-                            .shadow(color: brandBrown.opacity(0.25), radius: 5, x: 0, y: 2)
-                    }
-                    .buttonStyle(PressableScaleStyle())
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.white.opacity(0.85))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(brandBrown.opacity(0.10), lineWidth: 1)
-        )
-        .shadow(color: brandBrown.opacity(0.10), radius: 8, x: 0, y: 3)
-    }
-
     // MARK: - Bottom bar
     private var bottomBar: some View {
         HStack(alignment: .bottom) {
@@ -296,12 +394,8 @@ struct WalkSessionView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .background(
-            Capsule().fill(Color.white.opacity(0.9))
-        )
-        .overlay(
-            Capsule().stroke(brandBrown.opacity(0.12), lineWidth: 1)
-        )
+        .background(Capsule().fill(Color.white.opacity(0.9)))
+        .overlay(Capsule().stroke(brandBrown.opacity(0.12), lineWidth: 1))
         .shadow(color: brandBrown.opacity(0.10), radius: 6, x: 0, y: 2)
     }
 
@@ -316,7 +410,7 @@ struct WalkSessionView: View {
                 .padding(.vertical, 6)
                 .background(Capsule().fill(brandBrown))
                 .overlay(alignment: .bottom) {
-                    Triangle()
+                    DownTriangle()
                         .fill(brandBrown)
                         .frame(width: 10, height: 6)
                         .offset(y: 5)
@@ -327,9 +421,112 @@ struct WalkSessionView: View {
             Button {
                 showCamera = true
             } label: {
-                cameraGlyph
+                ZStack {
+                    cameraGlyph
+                        .opacity(uploadInFlight ? 0.5 : 1)
+                    if uploadInFlight {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .tint(brandBrown)
+                            .scaleEffect(1.2)
+                    }
+                }
             }
             .buttonStyle(PressableScaleStyle())
+            .disabled(uploadInFlight)
+        }
+    }
+
+    // MARK: - Backend integration
+
+    private func uploadAndStore(_ img: UIImage) async {
+        uploadInFlight = true
+        defer { uploadInFlight = false }
+
+        let lat = tracker.path.last?.latitude
+        let lng = tracker.path.last?.longitude
+
+        do {
+            let resp = try await ThiSpotAPI.analyzePhoto(
+                image: img,
+                userID: "demo_user", // TODO: from /api/login-demo
+                sessionID: walkID,
+                targetColor: todaysColor.rawValue,
+                lat: lat,
+                lng: lng
+            )
+
+            if resp.proof_result.accepted {
+                // Save locally only on accepted proof
+                capturedImages.append(img)
+                WalkPhotoStore.save(img, walkID: walkID)
+                photoIDs.append(resp.photo_id)
+                triggerPotBounce()
+
+                // Aggregate stats for /api/finish-walk
+                if let score = resp.vision_result?.match_score {
+                    bestMatchScore = max(bestMatchScore, score)
+                }
+                if resp.discovery_result?.is_new_spot == true {
+                    isNewSpot = true
+                }
+
+                let count = "\(resp.proof_result.accepted_count)/\(resp.proof_result.required_count)"
+                let base = resp.vision_result?.feedback ?? "Nice find!"
+                showFeedback(success: true, text: "\(base) (\(count))")
+            } else {
+                let msg = resp.vision_result?.feedback
+                    ?? "Hmm, not quite \(todaysColor.displayName.lowercased()). Try another shot."
+                showFeedback(success: false, text: msg)
+            }
+        } catch {
+            #if DEBUG
+            print("[analyzePhoto] error:", error)
+            #endif
+            showFeedback(success: false,
+                         text: error.localizedDescription)
+        }
+    }
+
+    private func showFeedback(success: Bool, text: String) {
+        feedbackIsSuccess = success
+        feedbackText = text
+        let snapshot = text
+        Task {
+            try? await Task.sleep(for: .seconds(3))
+            if feedbackText == snapshot {
+                feedbackText = nil
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func feedbackToast(text: String, isSuccess: Bool) -> some View {
+        VStack {
+            HStack(spacing: 10) {
+                Image(systemName: isSuccess
+                      ? "checkmark.circle.fill"
+                      : "exclamationmark.triangle.fill")
+                    .font(.system(size: 18, weight: .bold))
+                Text(text)
+                    .font(.system(size: 13, weight: .semibold))
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(3)
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                Capsule().fill(
+                    isSuccess
+                    ? brandGreen
+                    : Color(red: 0.85, green: 0.35, blue: 0.30)
+                )
+            )
+            .shadow(color: .black.opacity(0.18), radius: 8, x: 0, y: 4)
+            .padding(.horizontal, 24)
+            .padding(.top, 90)
+            Spacer()
         }
     }
 
@@ -351,75 +548,6 @@ struct WalkSessionView: View {
                 .background(Circle().fill(Color.white.opacity(0.95)))
                 .shadow(color: brandBrown.opacity(0.20), radius: 8, x: 0, y: 3)
         }
-    }
-
-    // MARK: - Photo library
-    private func saveToPhotoLibrary(_ img: UIImage) {
-        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
-            guard status == .authorized || status == .limited else { return }
-            PHPhotoLibrary.shared().performChanges {
-                PHAssetCreationRequest.creationRequestForAsset(from: img)
-            } completionHandler: { _, _ in }
-        }
-    }
-}
-
-// MARK: - Helpers
-
-private struct PhotoSelection: Identifiable {
-    let index: Int
-    var id: Int { index }
-}
-
-private struct PhotoViewer: View {
-    let image: UIImage
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .ignoresSafeArea()
-
-            VStack {
-                HStack {
-                    Spacer()
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 40, height: 40)
-                            .background(Circle().fill(Color.black.opacity(0.55)))
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-
-                Spacer()
-            }
-        }
-    }
-}
-
-private struct Triangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.midX, y: rect.maxY))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        p.closeSubpath()
-        return p
-    }
-}
-
-private struct PressableScaleStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
 

@@ -14,7 +14,13 @@ struct MainView: View {
     @StateObject private var locationManager = LocationManager()
     @StateObject private var weatherManager = WeatherManager()
     @State private var goToWalk = false
+    @State private var goToRecords = false
     @State private var todaysColor: WalkColor = .green
+    @State private var isPickingColor = false
+
+    /// Comma-separated list of recently used colors, sent to /api/recommend-color
+    /// so the server can avoid repeating today's pick.
+    @AppStorage("previousColors") private var previousColorsCSV: String = ""
 
     // TODO: aggregate from saved walk history
     private let totalDistanceKm: Double = 0.0
@@ -144,7 +150,7 @@ struct MainView: View {
                 HStack(alignment: .center) {
                     // Records (walk history)
                     Button {
-                        // TODO: navigate to records / walk history
+                        goToRecords = true
                     } label: {
                         VStack(spacing: 3) {
                             Image(systemName: "book.closed.fill")
@@ -162,17 +168,26 @@ struct MainView: View {
 
                     // Let's Walk (primary)
                     Button {
-                        todaysColor = .random()
-                        goToWalk = true
+                        Task { await pickColorAndStartWalk() }
                     } label: {
-                        Text("Let's\nWalk")
-                            .font(.system(size: 19, weight: .bold))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                            .frame(width: 124, height: 124)
-                            .background(Circle().fill(brandGreen))
-                            .shadow(color: brandGreen.opacity(0.45), radius: 14, x: 0, y: 6)
+                        ZStack {
+                            Text("Let's\nWalk")
+                                .font(.system(size: 19, weight: .bold))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .opacity(isPickingColor ? 0.4 : 1)
+                            if isPickingColor {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(.white)
+                                    .scaleEffect(1.3)
+                            }
+                        }
+                        .frame(width: 124, height: 124)
+                        .background(Circle().fill(brandGreen))
+                        .shadow(color: brandGreen.opacity(0.45), radius: 14, x: 0, y: 6)
                     }
+                    .disabled(isPickingColor)
 
                     Spacer()
 
@@ -199,6 +214,45 @@ struct MainView: View {
                 todaysColor: todaysColor
             )
         }
+        .navigationDestination(isPresented: $goToRecords) {
+            RecordsView()
+        }
+    }
+
+    // MARK: - Color recommendation flow
+
+    private func pickColorAndStartWalk() async {
+        isPickingColor = true
+        defer { isPickingColor = false }
+
+        let history = previousColorsCSV
+            .split(separator: ",")
+            .map { String($0) }
+
+        do {
+            let resp = try await ThiSpotAPI.recommendColor(
+                userID: "demo_user", // TODO: from /api/login-demo
+                previousColors: history
+            )
+            todaysColor = WalkColor.from(apiName: resp.target_color)
+            appendPreviousColor(resp.target_color)
+        } catch {
+            #if DEBUG
+            print("[recommendColor] failed, using random:", error)
+            #endif
+            todaysColor = .random()
+        }
+
+        goToWalk = true
+    }
+
+    private func appendPreviousColor(_ color: String) {
+        var arr = previousColorsCSV
+            .split(separator: ",")
+            .map { String($0) }
+        arr.append(color)
+        if arr.count > 5 { arr = Array(arr.suffix(5)) }
+        previousColorsCSV = arr.joined(separator: ",")
     }
 
     // Reusable capsule chip
