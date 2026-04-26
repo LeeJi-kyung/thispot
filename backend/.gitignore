@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+uploads/*
+!uploads/.gitkeep
+outputs/videos/*
+!outputs/videos/.gitkeep
+outputs/reports/*
+!outputs/reports/.gitkeep

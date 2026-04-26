@@ -89,5 +89,5 @@ iOSInjectionProject/
 *.xcconfig
 
 # Team-shared skills / harness docs (kept local, not pushed)
-skills/
-cmux-prompts/
+/skills/
+/cmux-prompts/
