@@ -16,6 +16,19 @@ enum ThiSpotAPI {
     /// (free-tier URL changes every session) or when moving to a real host.
     static let baseURL = URL(string: "https://democracy-effort-reward.ngrok-free.dev")!
 
+    /// Backend embeds absolute URLs like `http://localhost:8000/...` in
+    /// responses, which the device cannot reach. Swap the host so we go
+    /// through our configured baseURL (ngrok in dev, production host later).
+    static func rewriteServerURL(_ raw: String) -> URL? {
+        let prefixes = ["http://localhost:8000", "http://127.0.0.1:8000"]
+        var s = raw
+        for prefix in prefixes where s.hasPrefix(prefix) {
+            s = baseURL.absoluteString + String(s.dropFirst(prefix.count))
+            break
+        }
+        return URL(string: s)
+    }
+
     // MARK: - Response types
 
     struct AnalyzeResponse: Decodable {

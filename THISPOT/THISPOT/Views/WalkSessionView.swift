@@ -301,7 +301,8 @@ struct WalkSessionView: View {
                     ?? resp.report
             }
 
-            if let urlStr = finalReport?.image_url, let url = URL(string: urlStr) {
+            if let urlStr = finalReport?.image_url,
+               let url = ThiSpotAPI.rewriteServerURL(urlStr) {
                 // Download once, save to disk so Records picks it up too.
                 // Detail view then renders the local file (no second fetch).
                 if let localURL = await WalkPhotoStore.saveRemoteReport(
