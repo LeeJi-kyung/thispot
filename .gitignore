@@ -1,3 +1,6 @@
+# Xcode user data
+*.xcuserstate
+xcuserdata/
 ## User settings
 xcuserdata/
 
@@ -85,3 +88,7 @@ iOSInjectionProject/
 
 *.xcconfig
 .env
+
+# Team-shared skills / harness docs (kept local, not pushed)
+skills/
+cmux-prompts/

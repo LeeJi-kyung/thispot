@@ -6,13 +6,47 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		5CC24E582F9DB9AB00290D87 /* Pretendard-Black.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5CC24E4F2F9DB9AB00290D87 /* Pretendard-Black.otf */; };
+		5CC24E592F9DB9AB00290D87 /* Pretendard-ExtraBold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5CC24E512F9DB9AB00290D87 /* Pretendard-ExtraBold.otf */; };
+		5CC24E5A2F9DB9AB00290D87 /* Pretendard-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5CC24E532F9DB9AB00290D87 /* Pretendard-Light.otf */; };
+		5CC24E5B2F9DB9AB00290D87 /* Pretendard-Thin.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5CC24E572F9DB9AB00290D87 /* Pretendard-Thin.otf */; };
+		5CC24E5C2F9DB9AB00290D87 /* Pretendard-ExtraLight.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5CC24E522F9DB9AB00290D87 /* Pretendard-ExtraLight.otf */; };
+		5CC24E5D2F9DB9AB00290D87 /* Pretendard-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5CC24E502F9DB9AB00290D87 /* Pretendard-Bold.otf */; };
+		5CC24E5E2F9DB9AB00290D87 /* Pretendard-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5CC24E542F9DB9AB00290D87 /* Pretendard-Medium.otf */; };
+		5CC24E5F2F9DB9AB00290D87 /* Pretendard-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5CC24E552F9DB9AB00290D87 /* Pretendard-Regular.otf */; };
+		5CC24E602F9DB9AB00290D87 /* Pretendard-SemiBold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5CC24E562F9DB9AB00290D87 /* Pretendard-SemiBold.otf */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		5CC24E4F2F9DB9AB00290D87 /* Pretendard-Black.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Black.otf"; sourceTree = "<group>"; };
+		5CC24E502F9DB9AB00290D87 /* Pretendard-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Bold.otf"; sourceTree = "<group>"; };
+		5CC24E512F9DB9AB00290D87 /* Pretendard-ExtraBold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-ExtraBold.otf"; sourceTree = "<group>"; };
+		5CC24E522F9DB9AB00290D87 /* Pretendard-ExtraLight.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-ExtraLight.otf"; sourceTree = "<group>"; };
+		5CC24E532F9DB9AB00290D87 /* Pretendard-Light.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Light.otf"; sourceTree = "<group>"; };
+		5CC24E542F9DB9AB00290D87 /* Pretendard-Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Medium.otf"; sourceTree = "<group>"; };
+		5CC24E552F9DB9AB00290D87 /* Pretendard-Regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Regular.otf"; sourceTree = "<group>"; };
+		5CC24E562F9DB9AB00290D87 /* Pretendard-SemiBold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-SemiBold.otf"; sourceTree = "<group>"; };
+		5CC24E572F9DB9AB00290D87 /* Pretendard-Thin.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Thin.otf"; sourceTree = "<group>"; };
 		5CFD10F72F9DAEAF00E88525 /* THISPOT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = THISPOT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		5CC24E622F9DB9EA00290D87 /* Exceptions for "THISPOT" folder in "THISPOT" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 5CFD10F62F9DAEAF00E88525 /* THISPOT */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		5CFD10F92F9DAEAF00E88525 /* THISPOT */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				5CC24E622F9DB9EA00290D87 /* Exceptions for "THISPOT" folder in "THISPOT" target */,
+			);
 			path = THISPOT;
 			sourceTree = "<group>";
 		};
@@ -29,9 +63,26 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5CC24E4E2F9DB94E00290D87 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				5CC24E4F2F9DB9AB00290D87 /* Pretendard-Black.otf */,
+				5CC24E502F9DB9AB00290D87 /* Pretendard-Bold.otf */,
+				5CC24E512F9DB9AB00290D87 /* Pretendard-ExtraBold.otf */,
+				5CC24E522F9DB9AB00290D87 /* Pretendard-ExtraLight.otf */,
+				5CC24E532F9DB9AB00290D87 /* Pretendard-Light.otf */,
+				5CC24E542F9DB9AB00290D87 /* Pretendard-Medium.otf */,
+				5CC24E552F9DB9AB00290D87 /* Pretendard-Regular.otf */,
+				5CC24E562F9DB9AB00290D87 /* Pretendard-SemiBold.otf */,
+				5CC24E572F9DB9AB00290D87 /* Pretendard-Thin.otf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
 		5CFD10EE2F9DAEAF00E88525 = {
 			isa = PBXGroup;
 			children = (
+				5CC24E4E2F9DB94E00290D87 /* Fonts */,
 				5CFD10F92F9DAEAF00E88525 /* THISPOT */,
 				5CFD10F82F9DAEAF00E88525 /* Products */,
 			);
@@ -109,6 +160,15 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CC24E582F9DB9AB00290D87 /* Pretendard-Black.otf in Resources */,
+				5CC24E592F9DB9AB00290D87 /* Pretendard-ExtraBold.otf in Resources */,
+				5CC24E5A2F9DB9AB00290D87 /* Pretendard-Light.otf in Resources */,
+				5CC24E5B2F9DB9AB00290D87 /* Pretendard-Thin.otf in Resources */,
+				5CC24E5C2F9DB9AB00290D87 /* Pretendard-ExtraLight.otf in Resources */,
+				5CC24E5D2F9DB9AB00290D87 /* Pretendard-Bold.otf in Resources */,
+				5CC24E5E2F9DB9AB00290D87 /* Pretendard-Medium.otf in Resources */,
+				5CC24E5F2F9DB9AB00290D87 /* Pretendard-Regular.otf in Resources */,
+				5CC24E602F9DB9AB00290D87 /* Pretendard-SemiBold.otf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -256,6 +316,7 @@
 				DEVELOPMENT_TEAM = J4KK9T95PG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = THISPOT/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +345,7 @@
 				DEVELOPMENT_TEAM = J4KK9T95PG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = THISPOT/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
