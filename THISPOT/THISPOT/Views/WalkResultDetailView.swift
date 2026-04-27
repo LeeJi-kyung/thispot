@@ -43,15 +43,10 @@ struct WalkResultDetailView: View {
 
                 Spacer()
 
-                resultPng
-                    .padding(.horizontal, 20)
-                    .scaleEffect(entryScale)
-                    .opacity(entryOpacity)
-
                 if let badge {
-                    badgeCard(badge)
-                        .padding(.top, 20)
+                    badgeHero(badge)
                         .padding(.horizontal, 28)
+                        .scaleEffect(entryScale)
                         .opacity(entryOpacity)
                 }
 
@@ -68,92 +63,53 @@ struct WalkResultDetailView: View {
         }
     }
 
-    /// Server-generated PNG (`/api/finish-walk` → report.image_url) is the
-    /// primary content. Falls back to bundled `result` / `POT` if the URL is
-    /// missing or fails to load.
     @ViewBuilder
-    private var resultPng: some View {
-        if let url = imageURL {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .empty:
-                    placeholderCard {
+    private func badgeHero(_ badge: ThiSpotAPI.FinishWalkResponse.Badge) -> some View {
+        VStack(spacing: 18) {
+            if let urlStr = badge.image_url,
+               let url = ThiSpotAPI.rewriteServerURL(urlStr) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                    case .empty:
                         ProgressView()
                             .progressViewStyle(.circular)
                             .tint(brandBrown)
                             .scaleEffect(1.4)
+                    default:
+                        Color.clear
                     }
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFit()
-                        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                                .stroke(color.color.opacity(0.25), lineWidth: 1.5)
-                        )
-                        .shadow(color: brandBrown.opacity(0.20), radius: 14, x: 0, y: 8)
-                case .failure:
-                    fallbackPng
-                @unknown default:
-                    fallbackPng
                 }
+                .frame(maxWidth: 320, maxHeight: 360)
             }
-        } else {
-            fallbackPng
-        }
-    }
 
-    @ViewBuilder
-    private var fallbackPng: some View {
-        if UIImage(named: "result") != nil {
-            Image("result")
-                .resizable()
-                .scaledToFit()
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke(color.color.opacity(0.25), lineWidth: 1.5)
-                )
-                .shadow(color: brandBrown.opacity(0.20), radius: 14, x: 0, y: 8)
-        } else if UIImage(named: "POT") != nil {
-            placeholderCard {
-                Image("POT")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: 220)
+            if let title = badge.title, !title.isEmpty {
+                Text(title)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(textDark)
+                    .multilineTextAlignment(.center)
             }
-        } else {
-            placeholderCard {
-                Image(systemName: "photo.on.rectangle.angled")
-                    .font(.system(size: 70))
-                    .foregroundColor(brandBrown.opacity(0.4))
+
+            if let desc = badge.description, !desc.isEmpty {
+                Text(desc)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(brandBrown.opacity(0.85))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
             }
-        }
-    }
 
-    @ViewBuilder
-    private func badgeCard(_ badge: ThiSpotAPI.FinishWalkResponse.Badge) -> some View {
-        VStack(spacing: 8) {
-            Text(badge.title)
-                .font(.system(size: 19, weight: .bold))
-                .foregroundColor(textDark)
-                .multilineTextAlignment(.center)
-
-            Text(badge.description)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(brandBrown.opacity(0.85))
-                .multilineTextAlignment(.center)
-                .lineLimit(3)
-
-            Text(badge.rarity.uppercased())
-                .font(.system(size: 10, weight: .heavy))
-                .tracking(1.8)
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .background(Capsule().fill(rarityColor(badge.rarity)))
-                .padding(.top, 4)
+            if let rarity = badge.rarity, !rarity.isEmpty {
+                Text(rarity.uppercased())
+                    .font(.system(size: 10, weight: .heavy))
+                    .tracking(1.8)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(rarityColor(rarity)))
+            }
         }
     }
 
@@ -165,28 +121,6 @@ struct WalkResultDetailView: View {
         case "legendary": return Color(red: 0.92, green: 0.62, blue: 0.20)
         default:          return color.color
         }
-    }
-
-    @ViewBuilder
-    private func placeholderCard<C: View>(@ViewBuilder _ content: () -> C) -> some View {
-        VStack(spacing: 14) {
-            content()
-            Text("Your story is on its way…")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(brandBrown.opacity(0.7))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 38)
-        .padding(.horizontal, 18)
-        .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color.white.opacity(0.88))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(color.color.opacity(0.30), lineWidth: 1.5)
-        )
-        .shadow(color: brandBrown.opacity(0.15), radius: 12, x: 0, y: 5)
     }
 
     private var backButton: some View {

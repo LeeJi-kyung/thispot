@@ -305,7 +305,11 @@ struct WalkSessionView: View {
                     ?? resp.report
             }
 
-            if let urlStr = finalReport?.image_url,
+            // Prefer top-level `final_result_url`; fall back to report.image_url
+            // (which is what /api/generation-jobs returns when polled).
+            let mainURLString = resp.final_result_url ?? finalReport?.image_url
+
+            if let urlStr = mainURLString,
                let url = ThiSpotAPI.rewriteServerURL(urlStr) {
                 // Download once, save to disk so Records picks it up too.
                 // Detail view then renders the local file (no second fetch).

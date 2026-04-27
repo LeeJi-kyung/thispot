@@ -71,9 +71,6 @@ struct WalkResultView: View {
                         photosGrid
                     }
 
-                    // MARK: - Report card
-                    reportCard
-
                     // MARK: - Primary CTA
                     Button(action: onViewDetail) {
                         HStack(spacing: 8) {

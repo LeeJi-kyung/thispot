@@ -86,13 +86,15 @@ enum ThiSpotAPI {
 
     struct FinishWalkResponse: Decodable {
         let badge: Badge?
+        let final_result_url: String?
         let report: Report?
         let summary: Summary?
 
         struct Badge: Decodable {
-            let title: String
-            let description: String
-            let rarity: String
+            let title: String?
+            let description: String?
+            let rarity: String?
+            let image_url: String?
         }
 
         struct Report: Decodable {
